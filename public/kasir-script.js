@@ -1,8 +1,8 @@
 const USERS = { "admin": "123", "fatiha": "111", "kasir": "1" };
 let products = [], history = [], cart = [], payMethod = 'TUNAI';
-let salesChart = null; 
+let salesChart = null;
 
-// --- INIT ---
+// INIT
 window.onload = () => {
     if(sessionStorage.getItem('isLoggedIn')) {
         document.getElementById('login-screen').classList.add('hidden');
@@ -11,14 +11,14 @@ window.onload = () => {
     }
 };
 
-// --- LOGIN ---
+// LOGIN
 function handleLogin(e) {
     e.preventDefault();
     const u = document.getElementById('username').value;
     const p = document.getElementById('password').value;
     if(USERS[u] === p) {
         sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('username', u); 
+        sessionStorage.setItem('username', u);
         location.reload();
     } else {
         Swal.fire({icon:'error', title:'Gagal', text:'Cek username/password', timer:1500, showConfirmButton:false});
@@ -39,7 +39,7 @@ function updatePayBtn(btn) {
     btn.classList.add('active', 'ring-2', 'ring-blue-500', 'bg-slate-700');
 }
 
-// --- DATA SYNC (BACKEND) ---
+// DATA SYNC
 async function loadData() {
     try {
         const res = await fetch('/api/init');
@@ -47,25 +47,28 @@ async function loadData() {
         products = Array.isArray(data.products) ? data.products : [];
         history = Array.isArray(data.history) ? data.history : [];
         renderProducts();
+        
+        // Update laporan realtime jika sedang dibuka
+        if(!document.getElementById('statsModal').classList.contains('hidden')) {
+            calcStats();
+        }
     } catch(e) { 
         console.error("Gagal load data:", e);
-        products = []; history = [];
     }
 }
 
-// --- RENDER PRODUK ---
+// RENDER PRODUK
 function renderProducts() {
     const grid = document.getElementById('grid');
     const s = document.getElementById('search').value.toLowerCase();
     
     if(!products || products.length === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center text-slate-500 mt-10">Belum ada produk. Tambahkan di menu Stok.</div>';
+        grid.innerHTML = '<div class="col-span-full text-center text-slate-500 mt-10">Stok Kosong / Loading...</div>';
         return;
     }
 
     grid.innerHTML = products.map(p => {
         if(p.name && !p.name.toLowerCase().includes(s)) return '';
-        // Filter Kategori (Logic sederhana: cek class button aktif)
         const activeCat = document.querySelector('.cat-pill.bg-blue-600')?.id;
         if(activeCat === 'cat-food' && p.category !== 'food') return '';
         if(activeCat === 'cat-drink' && p.category !== 'drink') return '';
@@ -86,7 +89,7 @@ function renderProducts() {
     }).join('');
 }
 
-// --- CART ---
+// CART
 function addToCart(id) {
     const p = products.find(i => i.id === id);
     if(p.stock <= 0) return Swal.fire({icon:'warning', title:'Habis', toast:true, position:'top-end', timer:1000, showConfirmButton:false});
@@ -128,7 +131,7 @@ function renderCart() {
     return t;
 }
 
-// --- CHECKOUT ---
+// --- CHECKOUT (FIXED: PRINT & STOCK) ---
 async function checkout() {
     const t = renderCart();
     if(t === 0) return Swal.fire('Info', 'Pilih barang dulu', 'info');
@@ -137,7 +140,7 @@ async function checkout() {
         title: 'Total: Rp ' + t.toLocaleString(),
         text: 'Metode: ' + payMethod,
         input: 'number',
-        inputPlaceholder: 'Masukkan Nominal Bayar',
+        inputPlaceholder: 'Nominal Bayar',
         background: '#1e293b', color: '#fff',
         confirmButtonText: 'BAYAR & CETAK',
         showCancelButton: true,
@@ -145,7 +148,7 @@ async function checkout() {
     }).then(async r => {
         if(r.isConfirmed) {
             const bayar = parseInt(r.value);
-            if(bayar < t) return Swal.fire('Error', 'Uang Kurang!', 'error');
+            if(!bayar || bayar < t) return Swal.fire('Error', 'Uang Kurang!', 'error');
 
             const trx = {
                 id: 'INV-' + Date.now().toString().slice(-6),
@@ -157,6 +160,7 @@ async function checkout() {
             Swal.fire({title: 'Memproses...', didOpen: () => Swal.showLoading()});
 
             try {
+                // 1. Kirim ke Database
                 const res = await fetch('/api/checkout', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -164,17 +168,41 @@ async function checkout() {
                 });
                 
                 if(res.ok) {
-                    // Print Struk
+                    // 2. ISI DATA STRUK DULU (Sebelum Print)
                     document.getElementById('p-no').innerText = trx.id;
-                    document.getElementById('p-date').innerText = new Date().toLocaleString();
-                    document.getElementById('p-total').innerText = t.toLocaleString();
-                    document.getElementById('p-items-table').innerHTML = cart.map(i => 
-                        `<tr><td>${i.name}</td><td class="text-right">${(i.qty*i.price).toLocaleString()}</td></tr>`
-                    ).join('');
+                    document.getElementById('p-date').innerText = new Date().toLocaleString('id-ID');
                     
-                    cart = []; renderCart(); loadData();
+                    // Render tabel item untuk struk
+                    document.getElementById('p-items-table').innerHTML = cart.map(i => `
+                        <tr>
+                            <td style="padding: 2px 0;">${i.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 0; border-bottom: 1px dashed #ccc;">
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span>${i.qty} x ${i.price.toLocaleString()}</span>
+                                    <span>${(i.qty * i.price).toLocaleString()}</span>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    document.getElementById('p-total').innerText = 'Rp ' + t.toLocaleString();
+                    
+                    // 3. Update UI & Stok
+                    cart = []; 
+                    renderCart(); 
+                    
+                    // PENTING: Ambil stok terbaru dari server agar sinkron!
+                    await loadData(); 
+                    
                     Swal.close();
-                    window.print();
+                    
+                    // 4. Print Struk
+                    setTimeout(() => {
+                        window.print();
+                    }, 500); // Delay sedikit agar DOM siap
+                    
                 } else { throw new Error('Server error'); }
             } catch(e) {
                 Swal.fire('Error', 'Gagal Transaksi (Cek Koneksi)', 'error');
@@ -183,7 +211,7 @@ async function checkout() {
     });
 }
 
-// --- MANAJEMEN STOK ---
+// STOK MANAGEMENT
 async function addNewProduct() {
     const n = document.getElementById('newName').value;
     const p = document.getElementById('newPrice').value;
@@ -232,7 +260,6 @@ async function delProd(id) {
     }
 }
 
-// --- KATEGORI ---
 function setCategory(cat) {
     document.querySelectorAll('.cat-pill').forEach(b => {
         b.classList.remove('active', 'bg-blue-600', 'text-white', 'border-blue-600');
@@ -244,14 +271,10 @@ function setCategory(cat) {
         btn.classList.remove('bg-slate-800', 'border-slate-700', 'text-slate-400');
         btn.classList.add('active', 'bg-blue-600', 'text-white', 'border-blue-600');
     }
-    
-    // Force re-render dengan filter baru
-    const searchInput = document.getElementById('search'); 
     renderProducts(); 
 }
 
-
-// --- LAPORAN (ANTI-ERROR & 5 KOLOM) ---
+// LAPORAN & CHART
 function showStatsModal() {
     document.getElementById('statsModal').classList.remove('hidden');
     setTimeout(calcStats, 200);
@@ -292,7 +315,6 @@ function calcStats() {
     document.getElementById('stat-week').innerText = 'Rp ' + week.toLocaleString();
     document.getElementById('stat-month').innerText = 'Rp ' + month.toLocaleString();
 
-    // RENDER TABEL LENGKAP
     const tb = document.getElementById('historyTableBody');
     if(history.length === 0) {
         tb.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-slate-600 italic">Belum ada transaksi</td></tr>';
@@ -323,7 +345,6 @@ function calcStats() {
         }).join('');
     }
 
-    // CHART
     const ctx = document.getElementById('salesChart');
     if(ctx) {
         if(salesChart) salesChart.destroy();
