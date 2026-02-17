@@ -11,7 +11,7 @@ app.use(cors());
 
 // --- DATABASE ---
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://neopos_owner:PASSWORD@ep-link-anda.aws.neon.tech/neopos-db?sslmode=require',
+  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_JIsie6qltHp0@ep-wispy-waterfall-aeygt2p0-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
   ssl: { rejectUnauthorized: false }
 });
 
@@ -127,3 +127,4 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
