@@ -1,17 +1,17 @@
 {
   "name": "neopos-app",
   "version": "1.0.0",
-  "description": "Aplikasi Kasir Online Multi-Device",
+  "description": "Aplikasi Kasir Online Cloud",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.18.2",
+    "express": "^4.19.2",
     "pg": "^8.11.3"
   },
   "engines": {
-    "node": "24.x"
+    "node": "22.x"
   }
 }
