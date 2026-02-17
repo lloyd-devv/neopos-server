@@ -225,22 +225,88 @@ async function checkout() {
     }
 }
 function calcDashboard() {
-    const today=new Date().toDateString(); let inc=0, sld=0, cnt=0;
-    const days=[], data=[0,0,0,0,0,0,0]; for(let i=6;i>=0;i--){const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toLocaleDateString('id',{weekday:'short'}));}
-    history.forEach(t=>{
-        const d=new Date(t.date); if(d.toDateString()===today){inc+=t.total; cnt++; try{JSON.parse(t.items).forEach(i=>sld+=i.qty);}catch(e){}}
-        const diff=Math.floor((new Date()-d)/(86400000)); if(diff>=0 && diff<=6) data[6-diff]+=t.total;
-    });
-    document.getElementById('dash-income').innerText='Rp '+inc.toLocaleString(); document.getElementById('dash-sold').innerText=sld; document.getElementById('dash-trx').innerText=cnt;
+    const today = new Date().toDateString();
+    let income = 0, sold = 0, count = 0;
+    const dailyData = [0,0,0,0,0,0,0];
+    const days = [];
     
+    // Siapkan label hari untuk grafik (7 hari terakhir)
+    for(let i=6; i>=0; i--) { 
+        const d = new Date(); 
+        d.setDate(d.getDate()-i); 
+        days.push(d.toLocaleDateString('id',{weekday:'short'})); 
+    }
+
+    history.forEach(t => {
+        const d = new Date(t.date);
+        
+        // 1. Hitung Pemasukan & Transaksi Hari Ini
+        if(d.toDateString() === today) { 
+            income += parseInt(t.total); 
+            count++; 
+            
+            // --- PERBAIKAN LOGIKA ITEM TERJUAL ---
+            let itemList = t.items;
+            
+            // Cek: Jika masih string JSON, kita parse. Jika sudah objek, biarkan.
+            if (typeof itemList === 'string') {
+                try { itemList = JSON.parse(itemList); } catch(e) { itemList = []; }
+            }
+            
+            // Hitung total qty
+            if (Array.isArray(itemList)) {
+                itemList.forEach(i => sold += parseInt(i.qty));
+            }
+            // -------------------------------------
+        }
+
+        // 2. Hitung Grafik Mingguan
+        const diff = Math.floor((new Date() - d) / (1000 * 60 * 60 * 24));
+        if(diff >= 0 && diff <= 6) {
+            dailyData[6-diff] += parseInt(t.total);
+        }
+    });
+
+    // Update Tampilan Angka
+    document.getElementById('dash-income').innerText = 'Rp ' + income.toLocaleString();
+    document.getElementById('dash-sold').innerText = sold;
+    document.getElementById('dash-trx').innerText = count;
+    
+    // Update List Transaksi Terakhir
     document.getElementById('dash-recent-list').innerHTML = history.slice(0, 5).map(t => `
         <div class="flex justify-between items-center p-3 bg-[var(--bg-input)] rounded-lg mb-2 border border-[var(--border)]">
-            <div><div class="font-bold text-xs">${t.id}</div><div class="text-[10px] text-[var(--text-muted)]">${new Date(t.date).toLocaleTimeString()}</div></div>
-            <div class="font-bold text-[var(--accent)] text-sm">Rp ${t.total.toLocaleString()}</div>
+            <div>
+                <div class="font-bold text-xs">${t.id}</div>
+                <div class="text-[10px] text-[var(--text-muted)]">${new Date(t.date).toLocaleTimeString()}</div>
+            </div>
+            <div class="font-bold text-[var(--accent)] text-sm">Rp ${parseInt(t.total).toLocaleString()}</div>
         </div>`).join('');
 
-    const ctx = document.getElementById('salesChart'); if(salesChart) salesChart.destroy();
-    salesChart = new Chart(ctx, {type:'bar', data:{labels:days, datasets:[{label:'Omzet', data:data, backgroundColor:'#3b82f6', borderRadius:4}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#334155'}} }}});
+    // Update Grafik
+    const ctx = document.getElementById('salesChart');
+    if(salesChart) salesChart.destroy();
+    
+    salesChart = new Chart(ctx, {
+        type: 'bar',
+        data: { 
+            labels: days, 
+            datasets: [{ 
+                label: 'Omzet', 
+                data: dailyData, 
+                backgroundColor: '#3b82f6', 
+                borderRadius: 4 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: { 
+                x: { grid: { display: false }, ticks: { color: '#64748b', font: {size: 10} } }, 
+                y: { grid: { color: '#334155' }, ticks: { color: '#64748b', font: {size: 10} } } 
+            } 
+        }
+    });
 }
 
 // --- EDIT & DELETE STOK ---
@@ -284,4 +350,5 @@ function renderStockTable() {
             </td>
         </tr>`).join(''); 
 }
+
 
