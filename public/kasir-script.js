@@ -2,7 +2,7 @@ const USERS = { "admin": "123", "fatiha": "111", "kasir": "1" };
 let products = [], history = [], cart = [], payMethod = 'TUNAI';
 let salesChart = null;
 
-// INIT
+// --- INIT (Jalankan saat web dibuka) ---
 window.onload = () => {
     if(sessionStorage.getItem('isLoggedIn')) {
         document.getElementById('login-screen').classList.add('hidden');
@@ -11,7 +11,7 @@ window.onload = () => {
     }
 };
 
-// LOGIN
+// --- LOGIN SYSTEM ---
 function handleLogin(e) {
     e.preventDefault();
     const u = document.getElementById('username').value;
@@ -21,7 +21,7 @@ function handleLogin(e) {
         sessionStorage.setItem('username', u);
         location.reload();
     } else {
-        Swal.fire({icon:'error', title:'Gagal', text:'Cek username/password', timer:1500, showConfirmButton:false});
+        Swal.fire({icon:'error', title:'Gagal', text:'Username/Password Salah', timer:1500, showConfirmButton:false});
     }
 }
 
@@ -39,39 +39,44 @@ function updatePayBtn(btn) {
     btn.classList.add('active', 'ring-2', 'ring-blue-500', 'bg-slate-700');
 }
 
-// DATA SYNC
+// --- DATA SYNC (Sinkronisasi dengan Server) ---
 async function loadData() {
     try {
         const res = await fetch('/api/init');
         const data = await res.json();
+        // Pastikan data selalu array agar tidak error
         products = Array.isArray(data.products) ? data.products : [];
         history = Array.isArray(data.history) ? data.history : [];
+        
         renderProducts();
         
-        // Update laporan realtime jika sedang dibuka
+        // Jika sedang buka laporan, refresh juga angkanya
         if(!document.getElementById('statsModal').classList.contains('hidden')) {
             calcStats();
         }
     } catch(e) { 
         console.error("Gagal load data:", e);
+        products = []; history = [];
     }
 }
 
-// RENDER PRODUK
+// --- RENDER PRODUK (Tampilan Grid) ---
 function renderProducts() {
     const grid = document.getElementById('grid');
     const s = document.getElementById('search').value.toLowerCase();
     
     if(!products || products.length === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center text-slate-500 mt-10">Stok Kosong / Loading...</div>';
+        grid.innerHTML = '<div class="col-span-full text-center text-slate-500 mt-10">Data Kosong / Loading...</div>';
         return;
     }
 
     grid.innerHTML = products.map(p => {
         if(p.name && !p.name.toLowerCase().includes(s)) return '';
-        const activeCat = document.querySelector('.cat-pill.bg-blue-600')?.id;
-        if(activeCat === 'cat-food' && p.category !== 'food') return '';
-        if(activeCat === 'cat-drink' && p.category !== 'drink') return '';
+        
+        // Filter Kategori
+        const activeCat = document.querySelector('.cat-pill.active')?.innerText.toLowerCase();
+        if(activeCat === 'makanan' && p.category !== 'food') return '';
+        if(activeCat === 'minuman' && p.category !== 'drink') return '';
 
         return `
         <div onclick="addToCart(${p.id})" class="bg-slate-800 p-4 rounded-2xl cursor-pointer hover:bg-slate-700 transition border border-slate-700 hover:border-blue-500 group relative overflow-hidden ${p.stock<=0?'opacity-50 grayscale':''}">
@@ -89,14 +94,14 @@ function renderProducts() {
     }).join('');
 }
 
-// CART
+// --- KERANJANG BELANJA ---
 function addToCart(id) {
     const p = products.find(i => i.id === id);
-    if(p.stock <= 0) return Swal.fire({icon:'warning', title:'Habis', toast:true, position:'top-end', timer:1000, showConfirmButton:false});
+    if(p.stock <= 0) return Swal.fire({icon:'warning', title:'Stok Habis', toast:true, position:'top-end', timer:1000, showConfirmButton:false});
     
     const ex = cart.find(i => i.id === id);
     if(ex) {
-        if(ex.qty < p.stock) ex.qty++; else return Swal.fire({icon:'warning', title:'Max Stok', toast:true, position:'top-end', timer:1000, showConfirmButton:false});
+        if(ex.qty < p.stock) ex.qty++; else return Swal.fire({icon:'warning', title:'Stok Maksimal', toast:true, position:'top-end', timer:1000, showConfirmButton:false});
     } else {
         cart.push({...p, qty: 1});
     }
@@ -117,7 +122,7 @@ function renderCart() {
     l.innerHTML = cart.map((item, i) => {
         t += item.price * item.qty;
         return `
-        <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700 mb-2 group">
+        <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700 mb-2">
             <div>
                 <div class="font-bold text-xs text-white">${item.name}</div>
                 <div class="text-[10px] text-slate-400">${item.qty} x ${item.price.toLocaleString()}</div>
@@ -131,7 +136,7 @@ function renderCart() {
     return t;
 }
 
-// --- CHECKOUT (FIXED: PRINT & STOCK) ---
+// --- CHECKOUT & PRINT STRUK ---
 async function checkout() {
     const t = renderCart();
     if(t === 0) return Swal.fire('Info', 'Pilih barang dulu', 'info');
@@ -160,7 +165,7 @@ async function checkout() {
             Swal.fire({title: 'Memproses...', didOpen: () => Swal.showLoading()});
 
             try {
-                // 1. Kirim ke Database
+                // 1. Kirim Transaksi ke Server
                 const res = await fetch('/api/checkout', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -168,40 +173,31 @@ async function checkout() {
                 });
                 
                 if(res.ok) {
-                    // 2. ISI DATA STRUK DULU (Sebelum Print)
+                    // 2. ISI DATA STRUK (PENTING AGAR TIDAK KOSONG)
                     document.getElementById('p-no').innerText = trx.id;
                     document.getElementById('p-date').innerText = new Date().toLocaleString('id-ID');
                     
-                    // Render tabel item untuk struk
                     document.getElementById('p-items-table').innerHTML = cart.map(i => `
+                        <tr><td style="padding:2px 0; font-weight:bold">${i.name}</td></tr>
                         <tr>
-                            <td style="padding: 2px 0;">${i.name}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 0; border-bottom: 1px dashed #ccc;">
-                                <div style="display:flex; justify-content:space-between;">
-                                    <span>${i.qty} x ${i.price.toLocaleString()}</span>
-                                    <span>${(i.qty * i.price).toLocaleString()}</span>
-                                </div>
+                            <td style="padding:2px 0; border-bottom:1px dashed #000; display:flex; justify-content:space-between">
+                                <span>${i.qty} x ${i.price.toLocaleString()}</span>
+                                <span>${(i.qty * i.price).toLocaleString()}</span>
                             </td>
                         </tr>
                     `).join('');
 
                     document.getElementById('p-total').innerText = 'Rp ' + t.toLocaleString();
                     
-                    // 3. Update UI & Stok
+                    // 3. Reset Cart & Refresh Data
                     cart = []; 
                     renderCart(); 
-                    
-                    // PENTING: Ambil stok terbaru dari server agar sinkron!
-                    await loadData(); 
+                    await loadData(); // Ambil stok terbaru
                     
                     Swal.close();
                     
-                    // 4. Print Struk
-                    setTimeout(() => {
-                        window.print();
-                    }, 500); // Delay sedikit agar DOM siap
+                    // 4. Print
+                    setTimeout(() => window.print(), 500);
                     
                 } else { throw new Error('Server error'); }
             } catch(e) {
@@ -211,7 +207,7 @@ async function checkout() {
     });
 }
 
-// STOK MANAGEMENT
+// --- MANAJEMEN STOK (TAMBAH, EDIT, HAPUS) ---
 async function addNewProduct() {
     const n = document.getElementById('newName').value;
     const p = document.getElementById('newPrice').value;
@@ -225,9 +221,11 @@ async function addNewProduct() {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({name:n, price:p, stock:s, category:c, icon:'fa-box'})
             });
+            // Reset Form
             document.getElementById('newName').value = '';
             document.getElementById('newPrice').value = '';
             document.getElementById('newStock').value = '';
+            
             loadData(); renderStockTable();
             Swal.fire({icon: 'success', title: 'Produk Ditambah', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
         } catch(e) { Swal.fire('Error', 'Gagal', 'error'); }
@@ -245,16 +243,64 @@ function renderStockTable() {
     
     tbody.innerHTML = products.map(p => `
         <tr class="border-b border-slate-800 hover:bg-slate-800">
-            <td class="p-3 text-white font-bold">${p.name}</td>
+            <td class="p-3 text-white">
+                <div class="font-bold">${p.name}</div>
+                <div class="text-[10px] text-slate-500 uppercase">${p.category}</div>
+            </td>
             <td class="p-3 text-slate-400">Rp ${p.price.toLocaleString()}</td>
-            <td class="p-3 ${p.stock<=5?'text-red-500':'text-emerald-500'} font-bold">${p.stock}</td>
-            <td class="p-3 text-center"><button onclick="delProd(${p.id})" class="text-red-500 hover:text-red-300"><i class="fa-solid fa-trash-can"></i></button></td>
+            <td class="p-3 font-bold ${p.stock<=5?'text-red-500':'text-emerald-500'}">${p.stock}</td>
+            <td class="p-3 text-center flex justify-center gap-2">
+                <button onclick="editProduct(${p.id})" class="text-blue-400 hover:bg-blue-500/20 w-8 h-8 rounded flex items-center justify-center"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button onclick="delProd(${p.id})" class="text-red-500 hover:bg-red-500/20 w-8 h-8 rounded flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></button>
+            </td>
         </tr>
     `).join('');
 }
 
+// FUNGSI EDIT PRODUK (POPUP)
+async function editProduct(id) {
+    const p = products.find(i => i.id === id);
+    if(!p) return;
+
+    const { value: formValues } = await Swal.fire({
+        title: 'Edit Produk',
+        html: `
+            <input id="swal-name" class="swal2-input" placeholder="Nama" value="${p.name}">
+            <input id="swal-price" type="number" class="swal2-input" placeholder="Harga" value="${p.price}">
+            <input id="swal-stock" type="number" class="swal2-input" placeholder="Stok" value="${p.stock}">
+            <select id="swal-cat" class="swal2-input">
+                <option value="food" ${p.category==='food'?'selected':''}>Makanan</option>
+                <option value="drink" ${p.category==='drink'?'selected':''}>Minuman</option>
+            </select>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        preConfirm: () => {
+            return {
+                name: document.getElementById('swal-name').value,
+                price: document.getElementById('swal-price').value,
+                stock: document.getElementById('swal-stock').value,
+                category: document.getElementById('swal-cat').value
+            }
+        }
+    });
+
+    if (formValues) {
+        try {
+            await fetch(`/api/products/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(formValues)
+            });
+            loadData(); renderStockTable();
+            Swal.fire({icon:'success', title:'Data Terupdate', toast:true, position:'top-end', timer:1500, showConfirmButton:false});
+        } catch (e) { Swal.fire('Error', 'Gagal update', 'error'); }
+    }
+}
+
 async function delProd(id) {
-    if(confirm('Hapus produk?')) {
+    if(confirm('Hapus produk ini?')) {
         await fetch(`/api/products/${id}`, {method:'DELETE'});
         loadData(); renderStockTable();
     }
@@ -266,15 +312,15 @@ function setCategory(cat) {
         b.classList.add('bg-slate-800', 'border-slate-700', 'text-slate-400');
     });
     
-    const btn = cat === 'all' ? document.querySelector('.cat-pill') : document.getElementById('cat-'+cat);
-    if(btn) {
-        btn.classList.remove('bg-slate-800', 'border-slate-700', 'text-slate-400');
-        btn.classList.add('active', 'bg-blue-600', 'text-white', 'border-blue-600');
-    }
+    // Logic simple untuk highlight tombol
+    if(cat === 'all') document.querySelectorAll('.cat-pill')[0].classList.add('active', 'bg-blue-600', 'text-white');
+    if(cat === 'food') document.getElementById('cat-food').classList.add('active', 'bg-blue-600', 'text-white');
+    if(cat === 'drink') document.getElementById('cat-drink').classList.add('active', 'bg-blue-600', 'text-white');
+    
     renderProducts(); 
 }
 
-// LAPORAN & CHART
+// --- LAPORAN & GRAFIK (Anti-Error) ---
 function showStatsModal() {
     document.getElementById('statsModal').classList.remove('hidden');
     setTimeout(calcStats, 200);
@@ -315,6 +361,7 @@ function calcStats() {
     document.getElementById('stat-week').innerText = 'Rp ' + week.toLocaleString();
     document.getElementById('stat-month').innerText = 'Rp ' + month.toLocaleString();
 
+    // RENDER TABEL (5 Kolom: Waktu, Item, Metode, Total, Aksi)
     const tb = document.getElementById('historyTableBody');
     if(history.length === 0) {
         tb.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-slate-600 italic">Belum ada transaksi</td></tr>';
@@ -322,6 +369,7 @@ function calcStats() {
         tb.innerHTML = history.slice(0, 50).map(t => {
             let itemsText = '-';
             try {
+                // Parse Items JSON agar tampil nama produk
                 const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
                 itemsText = items.map(i => `<span class="text-slate-300 font-bold">${i.name}</span> <span class="text-[10px] text-slate-500">x${i.qty}</span>`).join('<br>');
             } catch(e) {}
@@ -345,6 +393,7 @@ function calcStats() {
         }).join('');
     }
 
+    // CHART
     const ctx = document.getElementById('salesChart');
     if(ctx) {
         if(salesChart) salesChart.destroy();
@@ -365,11 +414,13 @@ function calcStats() {
     }
 }
 
+// HAPUS RIWAYAT
 async function delHistory(id) {
     const res = await Swal.fire({title:'Hapus Laporan?', text:'Data tidak bisa kembali', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33', confirmButtonText:'Hapus'});
     if(res.isConfirmed) {
         await fetch(`/api/history/${id}`, {method:'DELETE'});
-        loadData(); calcStats();
+        loadData(); 
+        calcStats(); // Refresh tabel laporan
         Swal.fire({title:'Terhapus', icon:'success', toast:true, position:'top-end', timer:1000, showConfirmButton:false});
     }
 }
