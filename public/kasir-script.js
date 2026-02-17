@@ -138,7 +138,7 @@ function renderCart() {
     return t;
 }
 
-// --- CHECKOUT & PRINT STRUK ---
+// --- CHECKOUT & PRINT STRUK (DENGAN KEMBALIAN) ---
 async function checkout() {
     const t = renderCart();
     if(t === 0) return Swal.fire('Info', 'Pilih barang dulu', 'info');
@@ -147,7 +147,7 @@ async function checkout() {
         title: 'Total: Rp ' + t.toLocaleString(),
         text: 'Metode: ' + payMethod,
         input: 'number',
-        inputPlaceholder: 'Nominal Bayar',
+        inputPlaceholder: 'Masukkan Nominal Bayar',
         background: '#1e293b', color: '#fff',
         confirmButtonText: 'BAYAR & CETAK',
         showCancelButton: true,
@@ -155,7 +155,12 @@ async function checkout() {
     }).then(async r => {
         if(r.isConfirmed) {
             const bayar = parseInt(r.value);
+            
+            // Validasi Pembayaran
             if(!bayar || bayar < t) return Swal.fire('Error', 'Uang Kurang!', 'error');
+
+            // HITUNG KEMBALIAN
+            const kembali = bayar - t;
 
             const trx = {
                 id: 'INV-' + Date.now().toString().slice(-6),
@@ -175,26 +180,41 @@ async function checkout() {
                 });
                 
                 if(res.ok) {
-                    // 2. ISI DATA STRUK (PENTING AGAR TIDAK KOSONG)
+                    // 2. ISI DATA STRUK
                     document.getElementById('p-no').innerText = trx.id;
                     document.getElementById('p-date').innerText = new Date().toLocaleString('id-ID');
                     
+                    // Render Item Barang
                     document.getElementById('p-items-table').innerHTML = cart.map(i => `
                         <tr><td style="padding:2px 0; font-weight:bold">${i.name}</td></tr>
                         <tr>
-                            <td style="padding:2px 0; border-bottom:1px dashed #000; display:flex; justify-content:space-between">
+                            <td style="padding:2px 0; border-bottom:1px dashed #ccc; display:flex; justify-content:space-between">
                                 <span>${i.qty} x ${i.price.toLocaleString()}</span>
                                 <span>${(i.qty * i.price).toLocaleString()}</span>
                             </td>
                         </tr>
                     `).join('');
 
-                    document.getElementById('p-total').innerText = 'Rp ' + t.toLocaleString();
+                    // RENDER FOOTER (TOTAL, TUNAI, KEMBALI)
+                    document.getElementById('print-footer').innerHTML = `
+                        <div class="flex justify-between font-bold text-xs">
+                            <span>TOTAL</span>
+                            <span>Rp ${t.toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between text-[10px]">
+                            <span>TUNAI (${payMethod})</span>
+                            <span>Rp ${bayar.toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between text-[10px]">
+                            <span>KEMBALI</span>
+                            <span>Rp ${kembali.toLocaleString()}</span>
+                        </div>
+                    `;
                     
                     // 3. Reset Cart & Refresh Data
                     cart = []; 
                     renderCart(); 
-                    await loadData(); // Ambil stok terbaru
+                    await loadData(); 
                     
                     Swal.close();
                     
@@ -427,4 +447,5 @@ async function delHistory(id) {
         Swal.fire({title:'Terhapus', icon:'success', toast:true, position:'top-end', timer:1000, showConfirmButton:false});
     }
 }
+
 
