@@ -9,12 +9,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Agar tampilan HP lebih luas */
-        body { -webkit-tap-highlight-color: transparent; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
+  <style>
+    /* ... css lainnya ... */
+
+    /* Custom Scrollbar untuk Grid Produk */
+    .custom-scroll::-webkit-scrollbar { width: 8px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+</style>
 </head>
 <body class="bg-slate-900 text-white h-screen overflow-hidden font-sans selection:bg-blue-500 selection:text-white">
 
@@ -34,7 +37,83 @@
         </div>
     </div>
 
-    <div id="main-app" class="hidden flex h-full flex-col md:flex-row">
+    <div id="main-app" class="hidden flex h-screen w-screen overflow-hidden bg-slate-900 text-white">
+        
+        <aside class="hidden md:flex w-64 bg-slate-950 border-r border-slate-800 flex-col justify-between p-5 z-20 shrink-0">
+            <div>
+                <div class="flex items-center gap-3 text-blue-500 mb-8 px-2">
+                    <i class="fa-solid fa-cube text-2xl"></i>
+                    <span class="font-black text-xl tracking-tighter text-white">1998 Cafe</span>
+                </div>
+                
+                <nav class="space-y-2">
+                    <button onclick="setCategory('all')" class="cat-pill active w-full p-3 rounded-xl flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-900 transition-all font-bold text-sm">
+                        <i class="fa-solid fa-border-all text-lg"></i> Semua Menu
+                    </button>
+                    <button onclick="openStockModal()" class="w-full p-3 rounded-xl flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-900 transition-all font-bold text-sm">
+                        <i class="fa-solid fa-boxes-stacked text-lg"></i> Stok & Produk
+                    </button>
+                    <button onclick="showStatsModal()" class="w-full p-3 rounded-xl flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-900 transition-all font-bold text-sm">
+                        <i class="fa-solid fa-chart-pie text-lg"></i> Laporan
+                    </button>
+                </nav>
+            </div>
+            
+            <button onclick="handleLogout()" class="w-full p-4 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white flex items-center gap-3 transition-all font-bold text-xs">
+                <i class="fa-solid fa-power-off"></i> KELUAR
+            </button>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+            
+            <header class="shrink-0 h-20 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900 z-10">
+                <div class="relative w-full max-w-md">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" id="search" onkeyup="renderProducts()" placeholder="Cari menu..." 
+                        class="w-full bg-slate-950 border border-slate-800 rounded-full pl-10 pr-5 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all">
+                </div>
+
+                <div class="flex gap-2 ml-4">
+                    <button onclick="setCategory('food')" id="cat-food" class="cat-pill px-5 py-2 rounded-full border border-slate-700 bg-slate-800 text-[11px] font-bold hover:border-blue-500 transition-colors">MAKANAN</button>
+                    <button onclick="setCategory('drink')" id="cat-drink" class="cat-pill px-5 py-2 rounded-full border border-slate-700 bg-slate-800 text-[11px] font-bold hover:border-blue-500 transition-colors">MINUMAN</button>
+                    <button onclick="setCategory('snack')" id="cat-snack" class="cat-pill px-5 py-2 rounded-full border border-slate-700 bg-slate-800 text-[11px] font-bold hover:border-blue-500 transition-colors">CEMILAN</button>
+                </div>
+            </header>
+            
+            <div id="grid" class="flex-1 overflow-y-auto custom-scroll p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 content-start pb-24">
+                </div>
+            
+        </main>
+
+        <aside class="hidden md:flex w-96 bg-slate-950 border-l border-slate-800 flex-col z-20 shrink-0">
+            <div class="h-20 flex items-center justify-between px-6 border-b border-slate-800">
+                <span class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-cart-shopping text-blue-500"></i> Keranjang
+                </span>
+                <span id="cartCount" class="bg-blue-600 text-xs px-2.5 py-1 rounded-md font-bold">0</span>
+            </div>
+
+            <div id="cartList" class="flex-1 overflow-y-auto custom-scroll p-5 space-y-3">
+                </div>
+            
+            <div class="p-6 bg-slate-950 border-t border-slate-800">
+                <div class="flex justify-between items-end mb-4">
+                    <span class="text-sm text-slate-500">Total</span>
+                    <span id="totalDisplay" class="text-3xl font-black tracking-tight">Rp 0</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                     <button onclick="payMethod='TUNAI'; updatePayBtn(this)" class="pay-btn active bg-slate-800 border border-slate-700 py-3 rounded-xl text-xs font-bold hover:bg-slate-700 transition">TUNAI</button>
+                     <button onclick="payMethod='QRIS'; updatePayBtn(this)" class="pay-btn bg-slate-800 border border-slate-700 py-3 rounded-xl text-xs font-bold hover:bg-slate-700 transition">QRIS</button>
+                </div>
+                
+                <button onclick="checkout()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/30 active:scale-95 transition-all text-sm">
+                    PROSES BAYAR
+                </button>
+            </div>
+        </aside>
+
+    </div>
         
         <div class="md:hidden h-16 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 z-20">
             <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-bars text-xl"></i></button>
@@ -236,5 +315,6 @@
     <script src="kasir-script.js"></script>
 </body>
 </html>
+
 
 
