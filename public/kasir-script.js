@@ -1,4 +1,4 @@
-const USERS = { "admin": "123", "manager": "9999" };
+const USERS = { "admin": "123", "manager": "09876543211234567890" };
 const MANAGER_PIN = "9999";
 let products = [], history = [], cart = [], payMethod = 'TUNAI';
 let salesChart = null;
@@ -350,5 +350,6 @@ function renderStockTable() {
             </td>
         </tr>`).join(''); 
 }
+
 
 
