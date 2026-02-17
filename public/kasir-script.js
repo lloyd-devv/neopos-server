@@ -1,4 +1,3 @@
-// GANTI SELURUH ISI FILE INI
 const USERS = { "admin": "123", "fatiha": "111", "kasir": "1" };
 let products = [], history = [], cart = [], payMethod = 'TUNAI';
 let salesChart = null;
@@ -12,11 +11,10 @@ window.onload = () => {
     }
 };
 
-// --- RESPONSIVE UI LOGIC ---
+// --- RESPONSIVE UI ---
 function toggleSidebar() {
     const sb = document.getElementById('sidebar');
     const ov = document.getElementById('sidebar-overlay');
-    // Cek apakah class -translate-x-full ada
     if(sb.classList.contains('-translate-x-full')) {
         sb.classList.remove('-translate-x-full');
         ov.classList.remove('hidden');
@@ -27,8 +25,7 @@ function toggleSidebar() {
 }
 
 function toggleMobileCart() {
-    const modal = document.getElementById('mobile-cart-modal');
-    modal.classList.toggle('hidden');
+    document.getElementById('mobile-cart-modal').classList.toggle('hidden');
 }
 
 // --- LOGIN ---
@@ -55,13 +52,12 @@ function updatePayBtn(btn) {
         b.classList.remove('active', 'ring-2', 'ring-blue-500', 'bg-slate-700');
         b.classList.add('bg-slate-800');
     });
-    // Update semua tombol (baik di desktop maupun mobile modal)
-    const method = btn.innerText.includes('QRIS') ? 'QRIS' : 'TUNAI';
-    payMethod = method;
+    // Set Global Variable
+    payMethod = btn.innerText.includes('QRIS') ? 'QRIS' : 'TUNAI';
     
-    // Cari tombol yang sesuai di semua tempat dan highlight
+    // Update tampilan tombol di desktop & mobile
     document.querySelectorAll('.pay-btn').forEach(b => {
-        if(b.innerText.includes(method)) {
+        if(b.innerText.includes(payMethod)) {
             b.classList.remove('bg-slate-800');
             b.classList.add('active', 'ring-2', 'ring-blue-500', 'bg-slate-700');
         }
@@ -129,7 +125,6 @@ function addToCart(id) {
 }
 
 function renderCart() {
-    // Render di 2 tempat: Desktop Sidebar & Mobile Modal
     const containers = [document.getElementById('cartList'), document.getElementById('mobileCartList')];
     let t = 0;
     
@@ -139,9 +134,7 @@ function renderCart() {
             l.innerHTML = '<div class="text-center text-xs text-slate-600 mt-10 italic">Keranjang Kosong</div>';
         } else {
             l.innerHTML = cart.map((item, i) => {
-                // Hitung total hanya sekali (di loop pertama)
                 if(l === containers[0]) t += item.price * item.qty;
-                
                 return `
                 <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700 mb-2">
                     <div>
@@ -154,81 +147,101 @@ function renderCart() {
         }
     });
 
-    // Update Display Harga (Desktop & Mobile)
     document.getElementById('totalDisplay').innerText = 'Rp ' + t.toLocaleString();
     document.getElementById('mobileTotalDisplay').innerText = 'Rp ' + t.toLocaleString();
-    
-    // Update Badge Count
     document.getElementById('cartCount').innerText = cart.length;
     document.getElementById('mobileCartCount').innerText = cart.length;
-
     return t;
 }
 
-// --- CHECKOUT ---
+// --- CORE CHECKOUT LOGIC (DIPISAH) ---
+// Fungsi ini menangani penyimpanan ke DB & Print Struk
+async function processTransaction(t, bayar, kembali) {
+    const trx = {
+        id: 'INV-' + Date.now().toString().slice(-6),
+        date: new Date().toISOString(),
+        cashier: sessionStorage.getItem('username') || 'Admin',
+        total: t, method: payMethod, items: cart
+    };
+
+    Swal.fire({title: 'Memproses...', didOpen: () => Swal.showLoading()});
+
+    try {
+        const res = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(trx)
+        });
+        
+        if(res.ok) {
+            // ISI DATA STRUK
+            document.getElementById('p-no').innerText = trx.id;
+            document.getElementById('p-date').innerText = new Date().toLocaleString('id-ID');
+            document.getElementById('p-items-table').innerHTML = cart.map(i => `
+                <tr><td style="padding:2px 0; font-weight:bold">${i.name}</td></tr>
+                <tr>
+                    <td style="padding:2px 0; border-bottom:1px dashed #ccc; display:flex; justify-content:space-between">
+                        <span>${i.qty} x ${i.price.toLocaleString()}</span>
+                        <span>${(i.qty * i.price).toLocaleString()}</span>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('print-footer').innerHTML = `
+                <div class="flex justify-between font-bold text-xs"><span>TOTAL</span><span>Rp ${t.toLocaleString()}</span></div>
+                <div class="flex justify-between text-[10px]"><span>BAYAR (${payMethod})</span><span>Rp ${bayar.toLocaleString()}</span></div>
+                <div class="flex justify-between text-[10px]"><span>KEMBALI</span><span>Rp ${kembali.toLocaleString()}</span></div>
+            `;
+            
+            cart = []; renderCart(); await loadData();
+            Swal.close();
+            setTimeout(() => window.print(), 500);
+        } else { throw new Error('Server error'); }
+    } catch(e) { Swal.fire('Error', 'Gagal Transaksi', 'error'); }
+}
+
+// --- UI CHECKOUT (PILIHAN) ---
 async function checkout() {
-    const t = renderCart(); // Hitung ulang total
+    const t = renderCart();
     if(t === 0) return Swal.fire('Info', 'Pilih barang dulu', 'info');
-    
-    // Tutup modal mobile jika terbuka
     document.getElementById('mobile-cart-modal').classList.add('hidden');
 
+    // === JALUR 1: QRIS (LANGSUNG) ===
+    if (payMethod === 'QRIS') {
+        const result = await Swal.fire({
+            title: 'Pembayaran QRIS',
+            text: `Total: Rp ${t.toLocaleString()}`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Sudah Dibayar',
+            confirmButtonColor: '#2563eb',
+            cancelButtonText: 'Batal',
+            background: '#1e293b', color: '#fff'
+        });
+
+        if (result.isConfirmed) {
+            // QRIS: Bayar = Total, Kembali = 0
+            processTransaction(t, t, 0);
+        }
+        return; // Stop, jangan jalankan kode Tunai di bawah
+    }
+
+    // === JALUR 2: TUNAI (INPUT ANGKA) ===
     Swal.fire({
         title: 'Total: Rp ' + t.toLocaleString(),
-        text: 'Metode: ' + payMethod,
+        text: 'Metode: TUNAI',
         input: 'number',
         inputPlaceholder: 'Nominal Bayar',
         background: '#1e293b', color: '#fff',
         confirmButtonText: 'BAYAR & CETAK',
         showCancelButton: true,
         confirmButtonColor: '#2563eb'
-    }).then(async r => {
+    }).then(r => {
         if(r.isConfirmed) {
             const bayar = parseInt(r.value);
             if(!bayar || bayar < t) return Swal.fire('Error', 'Uang Kurang!', 'error');
-
             const kembali = bayar - t;
-            const trx = {
-                id: 'INV-' + Date.now().toString().slice(-6),
-                date: new Date().toISOString(),
-                cashier: sessionStorage.getItem('username') || 'Admin',
-                total: t, method: payMethod, items: cart
-            };
-
-            Swal.fire({title: 'Memproses...', didOpen: () => Swal.showLoading()});
-
-            try {
-                const res = await fetch('/api/checkout', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(trx)
-                });
-                
-                if(res.ok) {
-                    // ISI DATA STRUK
-                    document.getElementById('p-no').innerText = trx.id;
-                    document.getElementById('p-date').innerText = new Date().toLocaleString('id-ID');
-                    document.getElementById('p-items-table').innerHTML = cart.map(i => `
-                        <tr><td style="padding:2px 0; font-weight:bold">${i.name}</td></tr>
-                        <tr>
-                            <td style="padding:2px 0; border-bottom:1px dashed #ccc; display:flex; justify-content:space-between">
-                                <span>${i.qty} x ${i.price.toLocaleString()}</span>
-                                <span>${(i.qty * i.price).toLocaleString()}</span>
-                            </td>
-                        </tr>
-                    `).join('');
-
-                    document.getElementById('print-footer').innerHTML = `
-                        <div class="flex justify-between font-bold text-xs"><span>TOTAL</span><span>Rp ${t.toLocaleString()}</span></div>
-                        <div class="flex justify-between text-[10px]"><span>TUNAI (${payMethod})</span><span>Rp ${bayar.toLocaleString()}</span></div>
-                        <div class="flex justify-between text-[10px]"><span>KEMBALI</span><span>Rp ${kembali.toLocaleString()}</span></div>
-                    `;
-                    
-                    cart = []; renderCart(); await loadData();
-                    Swal.close();
-                    setTimeout(() => window.print(), 500);
-                } else { throw new Error('Server error'); }
-            } catch(e) { Swal.fire('Error', 'Gagal Transaksi', 'error'); }
+            processTransaction(t, bayar, kembali);
         }
     });
 }
@@ -265,16 +278,20 @@ function renderStockTable() {
     if(!products.length) return tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Kosong</td></tr>';
     
     tbody.innerHTML = products.map(p => `
-        <tr class="border-b border-slate-800 hover:bg-slate-800">
-            <td class="p-3 text-white">
-                <div class="font-bold">${p.name}</div>
-                <div class="text-[10px] text-slate-500 uppercase">${p.category}</div>
+        <tr class="hover:bg-slate-800/50 transition">
+            <td class="p-3 text-white align-middle">
+                <div class="font-bold text-sm">${p.name}</div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wide bg-slate-900 inline-block px-1.5 rounded mt-0.5 border border-slate-800">${p.category}</div>
             </td>
-            <td class="p-3 text-slate-400">Rp ${p.price.toLocaleString()}</td>
-            <td class="p-3 font-bold ${p.stock<=5?'text-red-500':'text-emerald-500'}">${p.stock}</td>
-            <td class="p-3 text-center flex justify-center gap-2">
-                <button onclick="editProduct(${p.id})" class="text-blue-400 w-8 h-8 rounded hover:bg-slate-700 flex items-center justify-center"><i class="fa-solid fa-pen-to-square"></i></button>
-                <button onclick="delProd(${p.id})" class="text-red-500 w-8 h-8 rounded hover:bg-slate-700 flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></button>
+            <td class="p-3 text-slate-300 align-middle font-mono text-xs">Rp ${p.price.toLocaleString()}</td>
+            <td class="p-3 text-center align-middle">
+                <span class="${p.stock<=5?'text-red-400 bg-red-500/10 border-red-500/20':'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'} border font-bold px-2 py-1 rounded text-xs">${p.stock}</span>
+            </td>
+            <td class="p-3 text-center align-middle">
+                <div class="flex justify-center gap-2">
+                    <button onclick="editProduct(${p.id})" class="text-blue-400 w-8 h-8 rounded hover:bg-slate-700 flex items-center justify-center"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button onclick="delProd(${p.id})" class="text-red-500 w-8 h-8 rounded hover:bg-slate-700 flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -325,7 +342,6 @@ function setCategory(cat) {
         b.classList.add('bg-slate-800', 'border-slate-700', 'text-slate-400');
     });
     
-    // Highlight logic
     if(cat === 'all') document.querySelectorAll('.cat-pill')[0].classList.add('active', 'bg-blue-600', 'text-white');
     if(cat === 'food') document.getElementById('cat-food').classList.add('active', 'bg-blue-600', 'text-white');
     if(cat === 'drink') document.getElementById('cat-drink').classList.add('active', 'bg-blue-600', 'text-white');
