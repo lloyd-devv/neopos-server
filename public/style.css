@@ -1,67 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 
-/* Default Style untuk Aplikasi (Gelap) */
+:root {
+    /* Default: DARK MODE */
+    --bg-main: #0f172a;      /* slate-900 */
+    --bg-panel: #1e293b;     /* slate-800 */
+    --bg-hover: #334155;     /* slate-700 */
+    --text-main: #ffffff;
+    --text-muted: #94a3b8;   /* slate-400 */
+    --border-color: #1e293b;
+    --input-bg: #020617;     /* slate-950 */
+}
+
+[data-theme="light"] {
+    /* LIGHT MODE */
+    --bg-main: #f1f5f9;      /* slate-100 */
+    --bg-panel: #ffffff;     /* white */
+    --bg-hover: #e2e8f0;     /* slate-200 */
+    --text-main: #0f172a;    /* slate-900 */
+    --text-muted: #64748b;   /* slate-500 */
+    --border-color: #cbd5e1; /* slate-300 */
+    --input-bg: #f8fafc;     /* slate-50 */
+}
+
 body {
-    background-color: #0f172a; /* Slate 900 */
-    color: white;
+    background-color: var(--bg-main);
+    color: var(--text-main);
     font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-/* Scrollbar Keren */
+/* Komponen UI yang mengikuti tema */
+.theme-panel { background-color: var(--bg-panel); border: 1px solid var(--border-color); }
+.theme-input { background-color: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+.theme-text { color: var(--text-main); }
+.theme-text-muted { color: var(--text-muted); }
+.theme-hover:hover { background-color: var(--bg-hover); }
+
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0f172a; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
+::-webkit-scrollbar-track { background: var(--bg-main); }
+::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
 
-/* Tombol Kategori Aktif */
-.cat-pill.active {
-    background-color: #2563eb !important;
-    color: white !important;
-    border-color: #2563eb !important;
-}
+/* Utilities */
+.active-nav { background-color: #2563eb; color: white !important; }
+.hidden { display: none !important; }
 
-/* Animasi Produk */
-.product-card {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.product-card:active {
-    transform: scale(0.95);
-}
-
-/* =========================================
-   PENTING: PENGATURAN CETAK (STRUK)
-   ========================================= */
+/* Print */
 @media print {
-    /* 1. Sembunyikan SEMUA elemen aplikasi */
-    body * {
-        visibility: hidden;
-        height: 0;
-        overflow: hidden;
-    }
-
-    /* 2. Tampilkan HANYA area struk */
-    #print-area, #print-area * {
-        visibility: visible;
-        height: auto;
-        color: black !important; /* Paksa Hitam untuk Printer */
-        background-color: white !important;
-    }
-
-    /* 3. Posisikan Struk di Pojok Kiri Atas Kertas */
-    #print-area {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%; /* Sesuaikan dengan lebar kertas printer (58mm/80mm) */
-        margin: 0;
-        padding: 0;
-        display: block !important;
-        font-family: 'Share Tech Mono', monospace; /* Font struk klasik */
-        font-size: 12px;
-    }
-
-    /* Sembunyikan background warna-warni saat print */
-    #login-screen, #main-app, .swal2-container {
-        display: none !important;
-    }
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area { position: absolute; top: 0; left: 0; width: 100%; color: black; background: white; }
 }
