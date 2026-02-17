@@ -82,21 +82,70 @@ async function loadData() {
 // --- POS ---
 function renderProducts() {
     const s = document.getElementById('search').value.toLowerCase();
-    const cat = document.querySelector('.cat-pill.active')?.innerText.toLowerCase() || 'semua';
     const grid = document.getElementById('grid');
+    const activeCat = document.querySelector('.cat-pill.active')?.innerText.toLowerCase() || 'semua';
     
-    grid.innerHTML = products.map(p => {
-        if(p.name && !p.name.toLowerCase().includes(s)) return '';
-        if(cat!=='semua' && ((cat==='makanan'&&p.category!=='food')||(cat==='minuman'&&p.category!=='drink')||(cat==='cemilan'&&p.category!=='snack'))) return '';
+    // Logic Filter (Termasuk pencarian Kategori)
+    const filtered = products.filter(p => {
+        // Filter Pencarian Text
+        if(p.name && !p.name.toLowerCase().includes(s)) return false;
         
-        return `
-        <div onclick="addToCart(${p.id})" class="card p-4 cursor-pointer hover:border-[var(--accent)] transition group relative overflow-hidden flex flex-col h-full ${p.stock<=0?'opacity-50 grayscale':''}">
-            <div class="flex justify-between items-start mb-2">
-                <div class="w-10 h-10 rounded-xl bg-[var(--bg-input)] flex items-center justify-center text-[var(--accent)] group-hover:bg-[var(--accent)] group-hover:text-white transition"><i class="fa-solid fa-utensils"></i></div>
-                <span class="text-xs font-bold px-2 py-1 rounded bg-[var(--bg-input)]">${p.stock}</span>
+        // Filter Kategori (Perbaikan Logika: Pakai includes karena ada icon text)
+        if (activeCat.includes('semua')) return true;
+        if (activeCat.includes('makanan') && p.category !== 'food') return false;
+        if (activeCat.includes('minuman') && p.category !== 'drink') return false;
+        if (activeCat.includes('cemilan') && p.category !== 'snack') return false;
+        
+        return true;
+    });
+
+    // State Kosong
+    if (filtered.length === 0) {
+        grid.innerHTML = `
+        <div class="col-span-full flex flex-col items-center justify-center py-20 text-[var(--text-secondary)] opacity-50">
+            <div class="w-20 h-20 bg-[var(--bg-input)] rounded-full flex items-center justify-center mb-4">
+                <i class="fa-solid fa-box-open text-4xl"></i>
             </div>
-            <div class="font-bold text-sm line-clamp-2 min-h-[2.5em]">${p.name}</div>
-            <div class="text-[var(--accent)] font-bold text-xs mt-1">Rp ${p.price.toLocaleString()}</div>
+            <p class="font-bold">Tidak ada produk ditemukan</p>
+            <p class="text-xs">Coba kata kunci atau kategori lain</p>
+        </div>`;
+        return;
+    }
+
+    // Render Kartu (DESIGN BARU LEBIH LEGA)
+    grid.innerHTML = filtered.map(p => {
+        return `
+        <div onclick="addToCart(${p.id})" class="card group cursor-pointer hover:border-[var(--accent)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col h-[220px] shadow-sm hover:shadow-[var(--accent)]/20 ${p.stock<=0?'opacity-60 grayscale cursor-not-allowed':''}">
+            
+            <div class="absolute top-3 right-3 z-10">
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md shadow-sm border ${p.stock<=5 ? 'bg-red-500/20 text-red-500 border-red-500/30' : 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30'}">
+                    ${p.stock} Tersedia
+                </span>
+            </div>
+
+            <div class="h-32 bg-[var(--bg-input)] flex items-center justify-center group-hover:bg-[var(--bg-input)]/80 transition relative">
+                <i class="fa-solid ${p.icon || 'fa-utensils'} text-4xl text-[var(--text-secondary)] group-hover:text-[var(--accent)] group-hover:scale-110 transition duration-300"></i>
+                
+                <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] to-transparent opacity-50"></div>
+            </div>
+
+            <div class="p-4 flex-1 flex flex-col justify-between bg-[var(--bg-card)]">
+                <div>
+                    <div class="font-bold text-sm text-[var(--text-primary)] leading-snug line-clamp-2 mb-1 group-hover:text-[var(--accent)] transition">
+                        ${p.name}
+                    </div>
+                    <div class="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider font-semibold">
+                        ${p.category === 'food' ? 'Makanan' : p.category === 'drink' ? 'Minuman' : 'Cemilan'}
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-end mt-2 border-t border-[var(--border)] pt-2 border-dashed">
+                    <div class="text-[var(--accent)] font-black text-sm">Rp ${p.price.toLocaleString()}</div>
+                    <div class="w-6 h-6 rounded-full bg-[var(--bg-body)] flex items-center justify-center text-[var(--text-secondary)] group-hover:bg-[var(--accent)] group-hover:text-white transition">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </div>
+                </div>
+            </div>
         </div>`;
     }).join('');
 }
@@ -171,3 +220,4 @@ function renderHistoryTable() { document.getElementById('historyTableBody').inne
 async function addNewProduct() { const n=document.getElementById('newName').value, p=document.getElementById('newPrice').value, s=document.getElementById('newStock').value, c=document.getElementById('newCategory').value; if(n&&p) { await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,price:p,stock:s,category:c})}); loadData().then(renderStockTable); } }
 async function delProd(id) { if(confirm('Hapus?')) { await fetch(`/api/products/${id}`,{method:'DELETE'}); loadData().then(renderStockTable); } }
 function renderStockTable() { document.getElementById('stockTableBody').innerHTML=products.map(p=>`<tr><td class="p-3">${p.name}</td><td class="p-3 text-xs uppercase">${p.category}</td><td class="p-3">Rp ${p.price.toLocaleString()}</td><td class="p-3 text-center">${p.stock}</td><td class="p-3 text-center"><button onclick="delProd(${p.id})" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td></tr>`).join(''); }
+
