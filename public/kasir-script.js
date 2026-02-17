@@ -1,22 +1,37 @@
-// --- CONFIG USER (Hardcoded untuk sementara) ---
-const VALID_USER = "admin";
-const VALID_PASS = "123";
+const USERS = { "admin": "123", "kasir": "1" };
+let products = [], history = [], cart = [];
 
-// --- LOGIN SYSTEM (REVISI ANTI-GAGAL) ---
+// --- INIT (Jalankan saat web dibuka) ---
+window.onload = () => {
+    // 1. Load Tema
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+    document.getElementById('themeSelect').value = savedTheme;
+
+    // 2. Cek Login
+    if(sessionStorage.getItem('isLoggedIn')) {
+        // SEMBUNYIKAN LOGIN SCREEN
+        document.getElementById('login-screen').classList.add('hidden');
+        
+        // TAMPILKAN MAIN APP (Ini yang kemarin kurang!)
+        document.getElementById('main-app').classList.remove('hidden');
+        
+        // Load Data & Buka Dashboard
+        loadData();
+        nav('dashboard'); 
+    }
+};
+
+// --- FUNGSI LOGIN (Update agar refresh otomatis) ---
 function handleLogin(e) {
-    e.preventDefault(); // Mencegah reload halaman
-    
-    // Ambil nilai dan hapus spasi tidak sengaja (trim)
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value.trim();
+    e.preventDefault();
+    const u = document.getElementById('username').value;
+    const p = document.getElementById('password').value;
 
-    console.log("Mencoba login dengan:", u, p); // Cek di Console (F12) jika masih gagal
-
-    // Cek Password (Username "admin", Password "123")
-    // Kita buat username tidak peduli huruf besar/kecil (toLowerCase)
-    if (u.toLowerCase() === VALID_USER && p === VALID_PASS) {
+    // Cek User & Password
+    if(USERS[u] && USERS[u] === p) {
         sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('username', u); // Simpan nama user
+        sessionStorage.setItem('username', u);
         
         Swal.fire({
             icon: 'success',
@@ -24,13 +39,11 @@ function handleLogin(e) {
             showConfirmButton: false,
             timer: 1000
         }).then(() => {
-            location.reload(); // Refresh halaman untuk masuk
+            location.reload(); // Refresh agar window.onload jalan
         });
     } else {
-        Swal.fire({
-            icon: 'error',
-            title: 'Akses Ditolak',
-            text: 'Username: admin | Password: 123'
-        });
+        Swal.fire('Error', 'Username atau Password Salah', 'error');
     }
 }
+
+// ... (Sisa kode ke bawah biarkan saja) ...
