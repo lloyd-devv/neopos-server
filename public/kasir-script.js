@@ -73,10 +73,12 @@ function renderProducts() {
     grid.innerHTML = products.map(p => {
         if(p.name && !p.name.toLowerCase().includes(s)) return '';
         
-        // Filter Kategori
+        // FILTER KATEGORI (TERMASUK CEMILAN)
         const activeCat = document.querySelector('.cat-pill.active')?.innerText.toLowerCase();
+        
         if(activeCat === 'makanan' && p.category !== 'food') return '';
         if(activeCat === 'minuman' && p.category !== 'drink') return '';
+        if(activeCat === 'cemilan' && p.category !== 'snack') return ''; // FIX CEMILAN
 
         return `
         <div onclick="addToCart(${p.id})" class="bg-slate-800 p-4 rounded-2xl cursor-pointer hover:bg-slate-700 transition border border-slate-700 hover:border-blue-500 group relative overflow-hidden ${p.stock<=0?'opacity-50 grayscale':''}">
@@ -257,7 +259,7 @@ function renderStockTable() {
     `).join('');
 }
 
-// FUNGSI EDIT PRODUK (POPUP)
+// FUNGSI EDIT PRODUK (POPUP & PILIHAN CEMILAN)
 async function editProduct(id) {
     const p = products.find(i => i.id === id);
     if(!p) return;
@@ -271,6 +273,7 @@ async function editProduct(id) {
             <select id="swal-cat" class="swal2-input">
                 <option value="food" ${p.category==='food'?'selected':''}>Makanan</option>
                 <option value="drink" ${p.category==='drink'?'selected':''}>Minuman</option>
+                <option value="snack" ${p.category==='snack'?'selected':''}>Cemilan</option>
             </select>
         `,
         focusConfirm: false,
@@ -312,10 +315,11 @@ function setCategory(cat) {
         b.classList.add('bg-slate-800', 'border-slate-700', 'text-slate-400');
     });
     
-    // Logic simple untuk highlight tombol
+    // Logic highlight tombol (termasuk cemilan)
     if(cat === 'all') document.querySelectorAll('.cat-pill')[0].classList.add('active', 'bg-blue-600', 'text-white');
     if(cat === 'food') document.getElementById('cat-food').classList.add('active', 'bg-blue-600', 'text-white');
     if(cat === 'drink') document.getElementById('cat-drink').classList.add('active', 'bg-blue-600', 'text-white');
+    if(cat === 'snack') document.getElementById('cat-snack').classList.add('active', 'bg-blue-600', 'text-white');
     
     renderProducts(); 
 }
@@ -414,7 +418,6 @@ function calcStats() {
     }
 }
 
-// HAPUS RIWAYAT
 async function delHistory(id) {
     const res = await Swal.fire({title:'Hapus Laporan?', text:'Data tidak bisa kembali', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33', confirmButtonText:'Hapus'});
     if(res.isConfirmed) {
