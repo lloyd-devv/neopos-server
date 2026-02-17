@@ -16,11 +16,7 @@ window.onload = () => {
 
 function toggleSidebar() {
     const sb = document.getElementById('sidebar');
-    if (sb.classList.contains('-translate-x-full')) {
-        sb.classList.remove('-translate-x-full');
-    } else {
-        sb.classList.add('-translate-x-full');
-    }
+    sb.classList.toggle('-translate-x-full');
 }
 
 function nav(pageId) {
@@ -170,8 +166,44 @@ function calcDashboard() {
     salesChart = new Chart(ctx, {type:'bar', data:{labels:days, datasets:[{label:'Omzet', data:data, backgroundColor:'#3b82f6', borderRadius:4}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#334155'}} }}});
 }
 
+// --- EDIT & DELETE STOK ---
+async function editProduct(id) {
+    const p = products.find(i => i.id === id);
+    const { value: f } = await Swal.fire({
+        title: 'Edit Produk',
+        html: `
+            <input id="sw-n" class="swal2-input" value="${p.name}" placeholder="Nama">
+            <input id="sw-p" type="number" class="swal2-input" value="${p.price}" placeholder="Harga">
+            <input id="sw-s" type="number" class="swal2-input" value="${p.stock}" placeholder="Stok">
+            <select id="sw-c" class="swal2-input"><option value="food">Makanan</option><option value="drink">Minuman</option><option value="snack">Cemilan</option></select>
+        `,
+        focusConfirm: false, showCancelButton: true, confirmButtonText: 'Simpan',
+        preConfirm: () => ({ name: document.getElementById('sw-n').value, price: document.getElementById('sw-p').value, stock: document.getElementById('sw-s').value, category: document.getElementById('sw-c').value })
+    });
+
+    if (f) {
+        await fetch(`/api/products/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(f) });
+        loadData().then(renderStockTable);
+        Swal.fire('Berhasil', 'Data diupdate', 'success');
+    }
+}
+
 async function delHistory(id) { const {value:p}=await Swal.fire({title:'PIN',input:'password'}); if(p===MANAGER_PIN){await fetch(`/api/history/${id}`,{method:'DELETE'}); loadData().then(renderHistoryTable); Swal.fire('Terhapus','','success');} else Swal.fire('Salah','','error'); }
 function renderHistoryTable() { document.getElementById('historyTableBody').innerHTML=history.map(t=>`<tr class="border-b border-[var(--border)] hover:bg-[var(--bg-input)] transition"><td class="p-4 text-[var(--text-muted)]">${new Date(t.date).toLocaleString()}</td><td class="p-4 font-mono text-xs">${t.id}</td><td class="p-4"><span class="px-2 py-1 rounded text-[10px] border border-[var(--border)] font-bold">${t.method}</span></td><td class="p-4 text-right font-bold">Rp ${t.total.toLocaleString()}</td><td class="p-4 text-center"><button onclick="delHistory('${t.id}')" class="text-red-500 hover:bg-red-500/10 p-2 rounded transition"><i class="fa-solid fa-trash"></i></button></td></tr>`).join(''); }
+
 async function addNewProduct() { const n=document.getElementById('newName').value, p=document.getElementById('newPrice').value, s=document.getElementById('newStock').value, c=document.getElementById('newCategory').value; if(n&&p) { await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,price:p,stock:s,category:c})}); loadData().then(renderStockTable); Swal.fire({toast:true,icon:'success',title:'Ditambah',position:'top-end',showConfirmButton:false,timer:1000}); } }
 async function delProd(id) { if(confirm('Hapus?')) { await fetch(`/api/products/${id}`,{method:'DELETE'}); loadData().then(renderStockTable); } }
-function renderStockTable() { document.getElementById('stockTableBody').innerHTML=products.map(p=>`<tr class="border-b border-[var(--border)] hover:bg-[var(--bg-input)] transition"><td class="p-4 font-bold text-sm">${p.name}</td><td class="p-4 text-xs uppercase text-[var(--text-muted)]">${p.category}</td><td class="p-4 font-mono text-xs">Rp ${p.price.toLocaleString()}</td><td class="p-4 text-center font-bold">${p.stock}</td><td class="p-4 text-center"><button onclick="delProd(${p.id})" class="text-red-500 hover:bg-red-500/10 p-2 rounded transition"><i class="fa-solid fa-trash"></i></button></td></tr>`).join(''); }
+
+function renderStockTable() { 
+    document.getElementById('stockTableBody').innerHTML=products.map(p=>`
+        <tr class="border-b border-[var(--border)] hover:bg-[var(--bg-input)] transition">
+            <td class="p-4 font-bold text-sm">${p.name}</td>
+            <td class="p-4 text-xs uppercase text-[var(--text-muted)]">${p.category}</td>
+            <td class="p-4 font-mono text-xs">Rp ${p.price.toLocaleString()}</td>
+            <td class="p-4 text-center font-bold">${p.stock}</td>
+            <td class="p-4 text-center flex justify-center gap-2">
+                <button onclick="editProduct(${p.id})" class="text-blue-500 hover:bg-blue-500/10 p-2 rounded transition"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="delProd(${p.id})" class="text-red-500 hover:bg-red-500/10 p-2 rounded transition"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        </tr>`).join(''); 
+}
