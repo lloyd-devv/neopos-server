@@ -105,22 +105,79 @@
             </div>
         </div>
 
-        <div id="page-pos" class="page-content hidden flex-1 flex flex-col lg:flex-row h-full overflow-hidden fade-in">
-            <div class="flex-1 flex flex-col h-full relative">
-                <header class="h-20 flex items-center justify-between px-6 gap-4 border-b border-[var(--border)] shrink-0">
-                    <div class="relative flex-1 max-w-md">
+        <div id="page-pos" class="page-content hidden flex-1 flex flex-col lg:flex-row h-full overflow-hidden fade-in bg-[#0f172a]">
+            
+            <div class="flex-1 flex flex-col h-full relative min-w-0"> <header class="h-24 md:h-20 border-b border-[var(--border)] flex flex-col md:flex-row items-center px-6 shrink-0 bg-[var(--bg-body)] z-20 gap-4 py-3 md:py-0">
+                    
+                    <div class="relative w-full md:w-64 shrink-0">
                         <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"></i>
-                        <input id="search" onkeyup="renderProducts()" placeholder="Cari menu..." class="input-field rounded-full pl-10 pr-4 py-2.5">
+                        <input id="search" onkeyup="renderProducts()" placeholder="Cari menu..." class="input-field w-full rounded-full pl-10 pr-4 py-2.5 shadow-sm">
                     </div>
-                    <div class="flex gap-2 overflow-x-auto no-scrollbar">
-                        <button onclick="setCategory('all')" class="cat-pill active px-4 py-2 rounded-full text-xs font-bold border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--accent)] transition">SEMUA</button>
-                        <button onclick="setCategory('food')" class="cat-pill px-4 py-2 rounded-full text-xs font-bold border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--accent)] transition">MAKANAN</button>
-                        <button onclick="setCategory('drink')" class="cat-pill px-4 py-2 rounded-full text-xs font-bold border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--accent)] transition">MINUMAN</button>
-                        <button onclick="setCategory('snack')" class="cat-pill px-4 py-2 rounded-full text-xs font-bold border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--accent)] transition">CEMILAN</button>
+
+                    <div class="hidden md:block w-px h-8 bg-[var(--border)] mx-2"></div>
+
+                    <div class="flex-1 w-full overflow-x-auto no-scrollbar flex items-center gap-3 mask-image-scroll">
+                        <button onclick="setCategory('all')" class="cat-pill active px-5 py-2 rounded-full text-xs font-bold border border-[var(--border)] bg-[var(--bg-card)] whitespace-nowrap hover:border-[var(--accent)] transition shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-border-all"></i> SEMUA
+                        </button>
+                        <button onclick="setCategory('food')" class="cat-pill px-5 py-2 rounded-full text-xs font-bold border border-[var(--border)] bg-[var(--bg-card)] whitespace-nowrap hover:border-[var(--accent)] transition shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-burger"></i> MAKANAN
+                        </button>
+                        <button onclick="setCategory('drink')" class="cat-pill px-5 py-2 rounded-full text-xs font-bold border border-[var(--border)] bg-[var(--bg-card)] whitespace-nowrap hover:border-[var(--accent)] transition shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-mug-hot"></i> MINUMAN
+                        </button>
+                        <button onclick="setCategory('snack')" class="cat-pill px-5 py-2 rounded-full text-xs font-bold border border-[var(--border)] bg-[var(--bg-card)] whitespace-nowrap hover:border-[var(--accent)] transition shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-cookie-bite"></i> CEMILAN
+                        </button>
                     </div>
                 </header>
-                <div id="grid" class="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 content-start pb-24"></div>
+                
+                <div id="grid" class="flex-1 overflow-y-auto p-6 md:p-8 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 content-start pb-32">
+                    </div>
             </div>
+            
+            <div class="w-full lg:w-96 card rounded-none border-l border-y-0 border-r-0 flex flex-col h-2/5 lg:h-full z-30 shadow-2xl bg-[var(--bg-card)]">
+                <div class="h-20 flex items-center justify-between px-6 border-b border-[var(--border)] font-bold bg-[var(--bg-card)] shadow-sm z-10">
+                    <span class="flex items-center gap-3 text-lg"><i class="fa-solid fa-bag-shopping text-[var(--accent)] text-xl"></i> Keranjang</span>
+                    <span id="cartCount" class="bg-[var(--accent)] text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg shadow-blue-500/30">0 Item</span>
+                </div>
+                
+                <div id="cartList" class="flex-1 overflow-y-auto p-5 space-y-3 bg-[var(--bg-body)]/50"></div>
+                
+                <div class="p-6 border-t border-[var(--border)] bg-[var(--bg-card)] space-y-4 shadow-[0_-5px_20px_rgba(0,0,0,0.2)]">
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm text-[var(--text-secondary)]"><span>Subtotal</span><span id="subtotalDisplay" class="text-[var(--text-primary)]">Rp 0</span></div>
+                        <div class="flex items-center gap-3 text-sm">
+                             <span class="text-[var(--text-secondary)]">Diskon</span>
+                             <div class="flex-1 relative">
+                                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] text-xs">Rp</span>
+                                <input type="number" id="inputDiscount" oninput="renderCart()" class="input-field py-1.5 pl-7 pr-2 rounded-lg text-right text-sm w-full bg-[var(--bg-body)]" placeholder="0">
+                             </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-dashed border-[var(--border)] my-2"></div>
+
+                    <div class="flex justify-between items-end">
+                        <span class="text-sm font-bold text-[var(--text-secondary)]">Total Bayar</span>
+                        <span id="totalDisplay" class="text-2xl font-black text-[var(--accent)] tracking-tight">Rp 0</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button onclick="setPayment('TUNAI')" class="pay-btn active py-3 rounded-xl border border-[var(--border)] text-xs font-bold hover:bg-[var(--bg-input)] transition flex flex-col items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-money-bill-wave text-lg"></i> TUNAI
+                        </button>
+                        <button onclick="setPayment('QRIS')" class="pay-btn py-3 rounded-xl border border-[var(--border)] text-xs font-bold hover:bg-[var(--bg-input)] transition flex flex-col items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-qrcode text-lg"></i> QRIS
+                        </button>
+                    </div>
+                    
+                    <button onclick="checkout()" class="btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-600/30 hover:scale-[1.02] transition-transform active:scale-95 flex items-center justify-center gap-2">
+                        PROSES BAYAR <i class="fa-solid fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
             
             <div class="w-full lg:w-96 card rounded-none border-l border-y-0 border-r-0 flex flex-col h-2/5 lg:h-full z-30 shadow-2xl bg-[var(--bg-card)]">
                 <div class="h-16 flex items-center justify-between px-6 border-b border-[var(--border)] font-bold">
@@ -199,3 +256,4 @@
     <script src="kasir-script.js"></script>
 </body>
 </html>
+
