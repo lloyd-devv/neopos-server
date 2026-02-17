@@ -1,7 +1,7 @@
 {
-  "name": "neopos-cloud-v2",
-  "version": "0.2.0",
-  "description": "NeoPOS Cloud dengan Google Sheets & Tema",
+  "name": "neopos-masterpiece",
+  "version": "1.0.0",
+  "description": "The Ultimate POS System",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,8 +9,9 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "googleapis": "^134.0.0",
     "pg": "^8.11.3",
-    "googleapis": "^134.0.0"
+    "dotenv": "^16.4.5"
   },
   "engines": {
     "node": "24.x"
