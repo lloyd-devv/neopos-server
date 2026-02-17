@@ -1,4 +1,4 @@
-# NeoPOS(BETA v0.1) 
+# NeoPOS(BETA v0.3) 
 
 Aplikasi Kasir Online berbasis Web yang modern, responsif, dan terintegrasi Cloud Database.
 
