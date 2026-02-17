@@ -47,33 +47,34 @@ function setTheme(theme) {
 }
 
 // --- DATA ---
+// --- GANTI BAGIAN INI DI kasir-script.js ---
+
 async function loadData() {
     try {
         const res = await fetch('/api/init');
+        
+        // Cek jika server error
+        if (!res.ok) throw new Error('Server bermasalah');
+
         const data = await res.json();
         products = data.products || [];
         history = data.history || [];
         
-        // Refresh tampilan jika data berubah
+        // Render ulang tampilan
         if(!document.getElementById('page-pos').classList.contains('hidden')) renderProducts();
         if(!document.getElementById('page-dashboard').classList.contains('hidden')) calcDashboard();
         
-    } catch(e) { console.error("Gagal koneksi:", e); }
-}
-
-function handleLogin(e) {
-    e.preventDefault();
-    const u = document.getElementById('username').value;
-    const p = document.getElementById('password').value;
-    if(USERS[u] === p) {
-        sessionStorage.setItem('isLoggedIn', 'true');
-        location.reload();
-    } else Swal.fire('Error', 'Login Gagal', 'error');
-}
-
-function handleLogout() {
-    sessionStorage.clear();
-    location.reload();
+    } catch(e) { 
+        console.error("Gagal koneksi:", e);
+        // Tampilkan pesan error di layar Kasir agar tidak bingung
+        document.getElementById('grid').innerHTML = `
+            <div class="col-span-full flex flex-col items-center justify-center text-slate-500 mt-20">
+                <i class="fa-solid fa-triangle-exclamation text-4xl mb-4 text-red-500"></i>
+                <p class="font-bold">Gagal Terhubung ke Database</p>
+                <p class="text-xs mt-1">Cek file server.js dan pastikan Link Neon sudah benar.</p>
+            </div>
+        `;
+    }
 }
 
 // --- POS SYSTEM ---
@@ -240,3 +241,4 @@ async function addNewProduct() {
 }
 async function delProd(id) { if(confirm('Hapus?')) await fetch(`/api/products/${id}`, {method:'DELETE'}); loadData(); renderStockTable(); }
 async function delHistory(id) { if(confirm('Hapus?')) await fetch(`/api/history/${id}`, {method:'DELETE'}); loadData(); renderHistoryTable(); }
+
