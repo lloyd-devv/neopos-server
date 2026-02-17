@@ -2,246 +2,155 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeoPOS Cloud</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoPOS Cloud v3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Agar tampilan HP lebih luas & Scrollbar Cantik */
-        body { -webkit-tap-highlight-color: transparent; }
-        
-        /* Scrollbar untuk Webkit (Chrome/Safari/Edge) */
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        /* Sembunyikan scrollbar di menu kategori horizontal */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Animasi */
-        .animate-slide-up { animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    </style>
 </head>
-<body class="bg-slate-900 text-white h-screen overflow-hidden font-sans selection:bg-blue-500 selection:text-white">
+<body data-theme="dark" class="h-screen overflow-hidden flex flex-col md:flex-row">
 
-    <div id="login-screen" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950 px-4">
-        <div class="bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-800 w-full max-w-sm text-center shadow-2xl">
-            <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(37,99,235,0.5)]">
-                <i class="fa-solid fa-cash-register text-2xl"></i>
-            </div>
-            <h1 class="text-2xl sm:text-3xl font-black mb-1 tracking-tighter">NEOPOS <span class="text-blue-500">CLOUD</span></h1>
-            <p class="text-slate-500 text-xs mb-6">Sistem Kasir Terintegrasi</p>
+    <div id="login-screen" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950">
+        <div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 w-full max-w-sm text-center">
+            <h1 class="text-3xl font-black text-white mb-6">NEOPOS <span class="text-blue-500">v3</span></h1>
             <form onsubmit="handleLogin(event)" class="space-y-4">
-                <input type="text" id="username" placeholder="Username" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition" autocomplete="off">
-                <input type="password" id="password" placeholder="Password" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition">
-                <button class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-900/20 active:scale-95">MASUK SISTEM</button>
+                <input type="text" id="username" placeholder="Username" class="w-full bg-slate-950 text-white border border-slate-800 rounded-xl p-3 outline-none">
+                <input type="password" id="password" placeholder="Password" class="w-full bg-slate-950 text-white border border-slate-800 rounded-xl p-3 outline-none">
+                <button class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl">MASUK</button>
             </form>
         </div>
     </div>
 
-    <div id="main-app" class="hidden flex h-screen w-screen overflow-hidden bg-slate-900 text-white flex-col md:flex-row">
+    <aside class="hidden md:flex w-20 lg:w-64 theme-panel border-r flex-col justify-between p-4 z-20">
+        <div>
+            <div class="flex items-center gap-3 px-2 mb-8 text-blue-500">
+                <i class="fa-solid fa-cube text-2xl"></i>
+                <span class="hidden lg:block font-black text-xl theme-text">NEOPOS</span>
+            </div>
+            <nav class="space-y-2">
+                <button onclick="nav('dashboard')" id="nav-dashboard" class="nav-item w-full text-left p-3 rounded-xl theme-text-muted hover:bg-slate-800 transition flex gap-3"><i class="fa-solid fa-house"></i> <span class="hidden lg:inline">Dashboard</span></button>
+                <button onclick="nav('pos')" id="nav-pos" class="nav-item w-full text-left p-3 rounded-xl theme-text-muted hover:bg-slate-800 transition flex gap-3"><i class="fa-solid fa-cash-register"></i> <span class="hidden lg:inline">Kasir</span></button>
+                <button onclick="nav('history')" id="nav-history" class="nav-item w-full text-left p-3 rounded-xl theme-text-muted hover:bg-slate-800 transition flex gap-3"><i class="fa-solid fa-clock-rotate-left"></i> <span class="hidden lg:inline">Riwayat</span></button>
+                <button onclick="nav('stock')" id="nav-stock" class="nav-item w-full text-left p-3 rounded-xl theme-text-muted hover:bg-slate-800 transition flex gap-3"><i class="fa-solid fa-boxes-stacked"></i> <span class="hidden lg:inline">Stok</span></button>
+                <button onclick="nav('settings')" id="nav-settings" class="nav-item w-full text-left p-3 rounded-xl theme-text-muted hover:bg-slate-800 transition flex gap-3"><i class="fa-solid fa-gear"></i> <span class="hidden lg:inline">Pengaturan</span></button>
+            </nav>
+        </div>
+        <button onclick="location.reload()" class="w-full p-3 text-red-500 hover:bg-red-500/10 rounded-xl flex gap-3"><i class="fa-solid fa-power-off"></i> <span class="hidden lg:inline">Keluar</span></button>
+    </aside>
+
+    <main class="flex-1 relative overflow-hidden flex flex-col">
         
-        <div class="md:hidden h-16 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
-            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-bars text-xl"></i></button>
-            <span class="font-black text-lg tracking-tight">NEOPOS</span>
-            <div class="w-6"></div> </div>
-
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-slate-950 border-r border-slate-800 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 flex flex-col justify-between p-4 shrink-0">
-            <div class="space-y-2">
-                <div class="h-12 hidden md:flex items-center justify-center lg:justify-start lg:px-2 mb-6 text-blue-500">
-                    <i class="fa-solid fa-cube text-2xl lg:mr-3"></i>
-                    <span class="hidden lg:block font-black text-xl tracking-tighter text-white">NEOPOS</span>
-                </div>
-                <div class="md:hidden flex justify-end mb-4">
-                    <button onclick="toggleSidebar()" class="text-slate-500"><i class="fa-solid fa-times text-xl"></i></button>
-                </div>
-
-                <button onclick="setCategory('all'); toggleSidebar()" class="cat-pill active w-full p-3 rounded-xl flex items-center justify-start gap-3 transition-colors text-slate-400 hover:text-white hover:bg-slate-900 group">
-                    <i class="fa-solid fa-border-all text-lg group-hover:text-blue-400"></i> <span class="text-sm font-medium">Semua Menu</span>
-                </button>
-                <button onclick="openStockModal(); toggleSidebar()" class="w-full p-3 rounded-xl flex items-center justify-start gap-3 transition-colors text-slate-400 hover:text-white hover:bg-slate-900 group">
-                    <i class="fa-solid fa-boxes-stacked text-lg group-hover:text-emerald-400"></i> <span class="text-sm font-medium">Stok & Produk</span>
-                </button>
-                <button onclick="showStatsModal(); toggleSidebar()" class="w-full p-3 rounded-xl flex items-center justify-start gap-3 transition-colors text-slate-400 hover:text-white hover:bg-slate-900 group">
-                    <i class="fa-solid fa-chart-pie text-lg group-hover:text-purple-400"></i> <span class="text-sm font-medium">Laporan</span>
-                </button>
-            </div>
-            
-            <button onclick="handleLogout()" class="w-full p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-start gap-3 transition-all">
-                <i class="fa-solid fa-power-off"></i> <span class="text-xs font-bold">KELUAR</span>
-            </button>
-        </aside>
-
-        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden glass"></div>
-
-        <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-900">
-            <header class="shrink-0 h-auto py-3 md:h-16 border-b border-slate-800 flex flex-col md:flex-row items-center justify-between px-4 gap-3 bg-slate-900/90 backdrop-blur-md z-10">
-                <div class="relative w-full md:w-auto">
-                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                    <input type="text" id="search" onkeyup="renderProducts()" placeholder="Cari menu..." class="w-full md:w-64 bg-slate-950 border border-slate-800 rounded-full pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-blue-500 transition-colors">
-                </div>
-                <div class="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-1 md:pb-0">
-                    <button onclick="setCategory('food')" id="cat-food" class="cat-pill whitespace-nowrap px-4 py-1.5 rounded-full border border-slate-700 bg-slate-800 text-[10px] font-bold tracking-wide hover:border-blue-500 transition-colors">MAKANAN</button>
-                    <button onclick="setCategory('drink')" id="cat-drink" class="cat-pill whitespace-nowrap px-4 py-1.5 rounded-full border border-slate-700 bg-slate-800 text-[10px] font-bold tracking-wide hover:border-blue-500 transition-colors">MINUMAN</button>
-                    <button onclick="setCategory('snack')" id="cat-snack" class="cat-pill whitespace-nowrap px-4 py-1.5 rounded-full border border-slate-700 bg-slate-800 text-[10px] font-bold tracking-wide hover:border-blue-500 transition-colors">CEMILAN</button>
-                </div>
-            </header>
-            
-            <div id="grid" class="flex-1 overflow-y-auto custom-scroll p-4 pb-24 md:pb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 content-start">
-                </div>
-        </main>
-
-        <aside id="desktop-cart" class="hidden md:flex w-80 lg:w-96 bg-slate-950 border-l border-slate-800 flex-col shadow-2xl z-20 shrink-0">
-            <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800 bg-slate-950 shrink-0">
-                <span class="font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-cart-shopping text-blue-500"></i> Keranjang</span>
-                <span id="cartCount" class="bg-blue-600 text-[10px] px-2 py-0.5 rounded font-bold">0</span>
-            </div>
-            
-            <div id="cartList" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-2"></div>
-            
-            <div class="p-5 bg-slate-950 border-t border-slate-800 space-y-4 shrink-0">
-                <div class="flex justify-between items-end">
-                    <span class="text-xs text-slate-500">Total Tagihan</span>
-                    <span id="totalDisplay" class="text-2xl font-black tracking-tight">Rp 0</span>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                     <button onclick="payMethod='TUNAI'; updatePayBtn(this)" class="pay-btn active bg-slate-800 border border-slate-700 py-3 rounded-lg text-[10px] font-bold hover:bg-slate-700 transition">TUNAI</button>
-                     <button onclick="payMethod='QRIS'; updatePayBtn(this)" class="pay-btn bg-slate-800 border border-slate-700 py-3 rounded-lg text-[10px] font-bold hover:bg-slate-700 transition">QRIS</button>
-                </div>
-                <button onclick="checkout()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all">PROSES BAYAR</button>
-            </div>
-        </aside>
-
-        <div id="mobile-cart-bar" class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 p-4 z-50 flex items-center justify-between safe-area-bottom shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
-            <div onclick="toggleMobileCart()" class="flex flex-col">
-                <span class="text-[10px] text-slate-400">Total Pembayaran</span>
-                <span id="mobileTotalDisplay" class="text-xl font-black text-white">Rp 0</span>
-            </div>
-            <button onclick="toggleMobileCart()" class="bg-blue-600 px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/30 flex items-center gap-2">
-                <i class="fa-solid fa-cart-shopping"></i> <span id="mobileCartCount">0</span>
-            </button>
+        <div class="md:hidden h-14 theme-panel border-b flex items-center justify-between px-4 shrink-0">
+            <span class="font-black theme-text">NEOPOS</span>
+            <button onclick="document.querySelector('aside').classList.toggle('hidden')" class="theme-text"><i class="fa-solid fa-bars"></i></button>
         </div>
 
-        <div id="mobile-cart-modal" class="md:hidden fixed inset-0 z-[55] hidden">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="toggleMobileCart()"></div>
-            <div class="absolute bottom-0 left-0 right-0 bg-slate-900 rounded-t-2xl border-t border-slate-800 max-h-[80vh] flex flex-col animate-slide-up">
-                <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl shrink-0">
-                    <h3 class="font-bold">Keranjang Belanja</h3>
-                    <button onclick="toggleMobileCart()" class="w-8 h-8 rounded-full bg-slate-800"><i class="fa-solid fa-chevron-down"></i></button>
+        <div id="page-dashboard" class="page-content hidden p-6 overflow-y-auto h-full">
+            <h2 class="text-2xl font-bold theme-text mb-6">Ringkasan Hari Ini</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="theme-panel p-6 rounded-2xl shadow-sm">
+                    <p class="theme-text-muted text-sm">Pemasukan Hari Ini</p>
+                    <h3 id="dash-income" class="text-3xl font-black text-emerald-500">Rp 0</h3>
                 </div>
-                <div id="mobileCartList" class="flex-1 overflow-y-auto p-4 space-y-2 min-h-[200px]"></div>
-                <div class="p-4 bg-slate-950 border-t border-slate-800 space-y-3 shrink-0">
-                     <div class="grid grid-cols-2 gap-2">
-                         <button onclick="payMethod='TUNAI'; updatePayBtn(this)" class="pay-btn active bg-slate-800 border border-slate-700 py-3 rounded-lg text-[10px] font-bold hover:bg-slate-700">TUNAI</button>
-                         <button onclick="payMethod='QRIS'; updatePayBtn(this)" class="pay-btn bg-slate-800 border border-slate-700 py-3 rounded-lg text-[10px] font-bold hover:bg-slate-700">QRIS</button>
+                <div class="theme-panel p-6 rounded-2xl shadow-sm">
+                    <p class="theme-text-muted text-sm">Barang Terjual</p>
+                    <h3 id="dash-sold" class="text-3xl font-black text-blue-500">0</h3>
+                </div>
+                <div class="theme-panel p-6 rounded-2xl shadow-sm">
+                    <p class="theme-text-muted text-sm">Total Transaksi</p>
+                    <h3 id="dash-trx" class="text-3xl font-black text-purple-500">0</h3>
+                </div>
+            </div>
+            <div class="theme-panel p-6 rounded-2xl">
+                <h3 class="font-bold theme-text mb-4">Transaksi Terakhir</h3>
+                <div id="dash-recent-list" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <div id="page-pos" class="page-content hidden flex-1 flex flex-col md:flex-row h-full overflow-hidden">
+            <div class="flex-1 flex flex-col h-full overflow-hidden">
+                <header class="h-16 theme-panel border-b flex items-center px-4 gap-3 shrink-0">
+                    <input id="search" onkeyup="renderProducts()" placeholder="Cari..." class="theme-input w-full rounded-full px-4 py-2 text-sm outline-none">
+                </header>
+                <div id="grid" class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 content-start"></div>
+            </div>
+            
+            <div class="w-full md:w-80 lg:w-96 theme-panel border-l flex flex-col h-1/3 md:h-full z-10 shadow-xl">
+                <div class="h-14 border-b flex items-center justify-between px-4 theme-text font-bold">
+                    <span>Keranjang</span>
+                    <span id="cartCount" class="bg-blue-600 text-white text-xs px-2 py-0.5 rounded">0</span>
+                </div>
+                <div id="cartList" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+                
+                <div class="p-4 border-t theme-panel space-y-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs theme-text-muted">Diskon (Rp):</span>
+                        <input type="number" id="inputDiscount" oninput="renderCart()" class="theme-input flex-1 rounded px-2 py-1 text-sm text-right" placeholder="0">
                     </div>
-                    <button onclick="checkout()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">BAYAR SEKARANG</button>
+                    <div class="flex justify-between items-end theme-text">
+                        <span class="text-sm">Total Akhir</span>
+                        <span id="totalDisplay" class="text-2xl font-black">Rp 0</span>
+                    </div>
+                    <button onclick="checkout()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-500">BAYAR</button>
                 </div>
             </div>
         </div>
 
-    </div>
-
-    <div id="stockModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="bg-slate-900 w-full max-w-2xl rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
-                <h3 class="font-bold">Manajemen Stok</h3>
-                <button onclick="document.getElementById('stockModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-times"></i></button>
-            </div>
-            <div class="p-4 bg-slate-950 border-b border-slate-800 grid grid-cols-2 gap-2">
-                <input id="newName" placeholder="Nama Produk" class="col-span-2 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none">
-                <input id="newPrice" type="number" placeholder="Harga" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none">
-                <input id="newStock" type="number" placeholder="Stok" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none">
-                <select id="newCategory" class="col-span-2 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-slate-400 focus:border-emerald-500 outline-none">
-                    <option value="food">Makanan</option>
-                    <option value="drink">Minuman</option>
-                    <option value="snack">Cemilan</option>
-                </select>
-                <button onclick="addNewProduct()" class="col-span-2 mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded text-xs transition">TAMBAH PRODUK</button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-0">
-                <table class="w-full text-left text-xs text-slate-400">
-                    <thead class="bg-slate-950 sticky top-0 text-slate-500 uppercase font-bold tracking-wider">
-                        <tr>
-                            <th class="p-3 w-5/12">Produk</th>
-                            <th class="p-3 w-3/12">Harga</th>
-                            <th class="p-3 w-2/12 text-center">Stok</th>
-                            <th class="p-3 w-2/12 text-center">Aksi</th>
-                        </tr>
+        <div id="page-history" class="page-content hidden p-6 overflow-y-auto h-full">
+            <h2 class="text-2xl font-bold theme-text mb-6">Riwayat Transaksi</h2>
+            <div class="theme-panel rounded-2xl overflow-hidden border">
+                <table class="w-full text-left text-sm theme-text">
+                    <thead class="theme-panel border-b text-xs uppercase theme-text-muted">
+                        <tr><th class="p-4">Waktu</th><th class="p-4">Total</th><th class="p-4 text-center">Aksi</th></tr>
                     </thead>
-                    <tbody id="stockTableBody" class="divide-y divide-slate-800"></tbody>
+                    <tbody id="historyTableBody" class="divide-y"></tbody>
                 </table>
             </div>
         </div>
-    </div>
 
-    <div id="statsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="bg-slate-900 w-full max-w-5xl rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col h-full max-h-[90vh]">
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
-                <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-chart-line text-blue-500"></i> Laporan Keuangan</h3>
-                <button onclick="document.getElementById('statsModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-times"></i></button>
+        <div id="page-stock" class="page-content hidden p-6 overflow-y-auto h-full">
+            <h2 class="text-2xl font-bold theme-text mb-6">Manajemen Stok</h2>
+            <div class="theme-panel p-4 rounded-2xl mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <input id="newName" placeholder="Nama" class="theme-input rounded px-3 py-2">
+                <input id="newPrice" type="number" placeholder="Harga" class="theme-input rounded px-3 py-2">
+                <input id="newStock" type="number" placeholder="Stok" class="theme-input rounded px-3 py-2">
+                <button onclick="addNewProduct()" class="bg-emerald-600 text-white rounded font-bold">TAMBAH</button>
             </div>
-            
-            <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scroll">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                        <div class="text-xs text-slate-400 mb-1">Hari Ini</div>
-                        <h4 id="stat-today" class="text-xl md:text-2xl font-black text-emerald-400">Rp 0</h4>
-                    </div>
-                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                        <div class="text-xs text-slate-400 mb-1">Minggu Ini</div>
-                        <h4 id="stat-week" class="text-xl md:text-2xl font-black text-blue-400">Rp 0</h4>
-                    </div>
-                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                        <div class="text-xs text-slate-400 mb-1">Bulan Ini</div>
-                        <h4 id="stat-month" class="text-xl md:text-2xl font-black text-purple-400">Rp 0</h4>
-                    </div>
-                </div>
-
-                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6 h-48 md:h-64">
-                    <canvas id="salesChart"></canvas>
-                </div>
-
-                <h4 class="font-bold mb-3 text-sm text-slate-300">Riwayat Transaksi</h4>
-                <div class="overflow-x-auto rounded-lg border border-slate-800">
-                    <table class="w-full text-sm text-left text-slate-400 min-w-[600px]">
-                        <thead class="bg-slate-950 text-xs uppercase text-slate-500">
-                            <tr>
-                                <th class="p-3">Waktu & ID</th>
-                                <th class="p-3">Detail Item</th>
-                                <th class="p-3">Metode</th>
-                                <th class="p-3 text-right">Total</th>
-                                <th class="p-3 text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTableBody"></tbody>
-                    </table>
-                </div>
+            <div class="theme-panel rounded-2xl overflow-hidden border">
+                <table class="w-full text-left text-sm theme-text">
+                    <thead class="theme-panel border-b text-xs uppercase theme-text-muted">
+                        <tr><th class="p-4">Produk</th><th class="p-4">Stok</th><th class="p-4 text-center">Aksi</th></tr>
+                    </thead>
+                    <tbody id="stockTableBody" class="divide-y"></tbody>
+                </table>
             </div>
         </div>
-    </div>
 
-    <div id="print-area" class="hidden print:block fixed inset-0 bg-white text-black p-4 z-[100] font-mono">
-        <div class="text-center mb-4">
-            <h2 class="font-bold text-xl">NEOPOS STORE</h2>
-            <p class="text-[10px]">Jl. Cloud Technology No. 1</p>
+        <div id="page-settings" class="page-content hidden p-6 h-full">
+            <h2 class="text-2xl font-bold theme-text mb-6">Pengaturan</h2>
+            <div class="theme-panel p-6 rounded-2xl max-w-md">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="theme-text font-bold">Tema Aplikasi</span>
+                    <select onchange="setTheme(this.value)" id="themeSelect" class="theme-input px-4 py-2 rounded-lg">
+                        <option value="dark">Gelap (Dark)</option>
+                        <option value="light">Terang (Light)</option>
+                    </select>
+                </div>
+                <p class="text-xs theme-text-muted">Pilih tampilan yang nyaman untuk mata Anda.</p>
+            </div>
         </div>
-        <div class="border-b border-dashed border-black my-2"></div>
-        <div class="flex justify-between text-[10px]">
-            <span>NO: <span id="p-no"></span></span>
-            <span id="p-date"></span>
-        </div>
-        <div class="border-b border-dashed border-black my-2"></div>
-        <table class="w-full text-[10px]" id="p-items-table"></table>
-        <div class="border-b border-dashed border-black my-2"></div>
-        <div id="print-footer" class="space-y-1"></div>
-        <div class="text-center text-[10px] mt-6"><p>Terima Kasih</p></div>
+
+    </main>
+
+    <div id="print-area" class="hidden">
+        <div class="text-center font-bold mb-2">NEOPOS STORE</div>
+        <div class="border-b border-dashed border-black my-1"></div>
+        <div class="flex justify-between text-xs"><span>NO: <span id="p-no"></span></span><span id="p-date"></span></div>
+        <div class="border-b border-dashed border-black my-1"></div>
+        <table class="w-full text-xs" id="p-items"></table>
+        <div class="border-b border-dashed border-black my-1"></div>
+        <div id="p-footer" class="text-xs font-bold space-y-1"></div>
     </div>
 
     <script src="kasir-script.js"></script>
