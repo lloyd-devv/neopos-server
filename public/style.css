@@ -1,62 +1,57 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
 
 :root {
-    /* DARK THEME (Default) */
-    --bg-body: #0f172a;
-    --bg-card: #1e293b;
-    --bg-input: #020617;
-    --text-primary: #ffffff;
+    /* DARK MODE (Default) - Warna Premium */
+    --bg-body: #020617;      /* Lebih gelap untuk kontras */
+    --bg-card: #0f172a;      /* Card sedikit lebih terang */
+    --bg-input: #1e293b;
+    --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
-    --accent: #3b82f6;
-    --border: #334155;
-    --success: #10b981;
-    --danger: #ef4444;
+    --accent: #3b82f6;       /* Biru modern */
+    --border: #1e293b;
 }
 
 [data-theme="light"] {
-    /* LIGHT THEME */
-    --bg-body: #f8fafc;
+    /* LIGHT MODE - Bersih & Profesional */
+    --bg-body: #f1f5f9;
     --bg-card: #ffffff;
-    --bg-input: #f1f5f9;
+    --bg-input: #f8fafc;
     --text-primary: #0f172a;
     --text-secondary: #64748b;
     --accent: #2563eb;
     --border: #e2e8f0;
 }
 
-* { box-sizing: border-box; transition: background-color 0.3s, border-color 0.3s, color 0.3s; }
-body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-body); color: var(--text-primary); }
+* { box-sizing: border-box; outline: none; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-body); color: var(--text-primary); transition: background 0.3s; }
 
-/* Utility Classes */
-.glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+/* UTILITIES */
 .card { background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 1rem; }
-.btn-primary { background: linear-gradient(135deg, var(--accent), #2563eb); color: white; border: none; }
-.btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-.input-field { background-color: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); outline: none; transition: all 0.2s; }
-.input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+.input-field { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); width: 100%; transition: all 0.2s; }
+.input-field:focus { border-color: var(--accent); ring: 2px solid rgba(59, 130, 246, 0.2); }
 
-/* Animations */
-.fade-in { animation: fadeIn 0.4s ease-out forwards; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+/* SIDEBAR ACTIVE STATE */
+.nav-item.active { 
+    background: linear-gradient(90deg, var(--accent), #2563eb); 
+    color: white !important; 
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    border: none;
+}
 
-.scale-in { animation: scaleIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
-@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-/* Custom Scrollbar */
+/* CUSTOM SCROLLBAR (Agar tidak merusak desain) */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* Navigation Active State */
-.nav-item.active { background-color: var(--accent); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+/* ANIMASI */
+.fade-in { animation: fadeIn 0.4s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Hide Element */
-.hidden { display: none !important; }
-
-/* Print Styles */
+/* PRINT FIX */
 @media print {
     body * { visibility: hidden; }
     #print-area, #print-area * { visibility: visible; }
-    #print-area { position: absolute; left: 0; top: 0; width: 100%; color: black; background: white; }
+    #print-area { position: absolute; top: 0; left: 0; width: 100%; color: black; background: white; }
 }
