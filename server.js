@@ -9,19 +9,19 @@ app.use(cors());
 
 // --- KONFIGURASI DATABASE ---
 const pool = new Pool({
-  // GANTI LINK DI BAWAH INI DENGAN LINK NEON ANDA:
+  // ⚠️ GANTI TEKS DI BAWAH DENGAN LINK NEON ASLI ANDA ⚠️
   connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_JIsie6qltHp0@ep-wispy-waterfall-aeygt2p0-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
   ssl: {
     rejectUnauthorized: false
   }
 });
 
-// Melayani file statis (Frontend)
+// Serve file statis
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- API ROUTES (Jembatan Data) ---
+// --- API ROUTES ---
 
-// 1. Ambil Data Awal (Produk & Riwayat)
+// 1. Ambil Data Awal
 app.get('/api/init', async (req, res) => {
   try {
     const products = await pool.query('SELECT * FROM products ORDER BY id ASC');
@@ -31,26 +31,25 @@ app.get('/api/init', async (req, res) => {
       history: history.rows
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Gagal ambil data' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// 2. Transaksi Baru (Kurangi Stok & Simpan Laporan)
+// 2. Transaksi Baru
 app.post('/api/checkout', async (req, res) => {
   const { id, date, cashier, total, method, items } = req.body;
   const client = await pool.connect();
   
   try {
-    await client.query('BEGIN'); // Mulai Transaksi Aman
-
-    // Simpan ke Riwayat
+    await client.query('BEGIN');
+    
+    // Simpan ke Riwayat (Items disimpan sebagai JSON Text)
     await client.query(
       'INSERT INTO history (id, date, cashier, total, method, items) VALUES ($1, $2, $3, $4, $5, $6)',
       [id, date, cashier, total, method, JSON.stringify(items)]
     );
 
-    // Kurangi Stok Barang
+    // Kurangi Stok
     for (const item of items) {
       await client.query(
         'UPDATE products SET stock = stock - $1 WHERE id = $2',
@@ -58,18 +57,17 @@ app.post('/api/checkout', async (req, res) => {
       );
     }
 
-    await client.query('COMMIT'); // Simpan Permanen
+    await client.query('COMMIT');
     res.json({ success: true });
   } catch (err) {
-    await client.query('ROLLBACK'); // Batalkan jika error
-    console.error(err);
-    res.status(500).json({ error: 'Gagal transaksi' });
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
 });
 
-// 3. Tambah Produk Baru
+// 3. Tambah Produk
 app.post('/api/products', async (req, res) => {
   const { name, category, price, stock, icon } = req.body;
   try {
@@ -93,12 +91,22 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-// Route Default untuk Vercel
+// 5. Hapus Riwayat Laporan (FITUR BARU)
+app.delete('/api/history/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM history WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route Default
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// JALANKAN SERVER
+// Jalankan Server
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
