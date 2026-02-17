@@ -127,26 +127,103 @@ function renderCart() {
 function setPayment(m) { payMethod=m; document.querySelectorAll('.pay-btn').forEach(b=>{b.classList.remove('active','bg-[var(--accent)]','text-white','border-transparent'); if(b.innerText.includes(m)) b.classList.add('active','bg-[var(--accent)]','text-white','border-transparent');});}
 
 async function checkout() {
-    const tot = renderCart(); if(tot===0 && cart.length===0) return;
+    const tot = renderCart(); 
+    if(tot === 0 && cart.length === 0) return Swal.fire('Ops', 'Keranjang kosong', 'info');
+
     let bayar = tot;
     if(payMethod === 'TUNAI') {
-        const {value:u} = await Swal.fire({title:`Total: Rp ${tot.toLocaleString()}`, input:'number', confirmButtonText:'BAYAR', confirmButtonColor:'#3b82f6'});
-        if(!u || parseInt(u)<tot) return Swal.fire('Kurang','','error');
+        const {value:u} = await Swal.fire({
+            title: `Total: Rp ${tot.toLocaleString()}`, 
+            input: 'number', 
+            confirmButtonText: 'BAYAR & CETAK', 
+            confirmButtonColor: '#3b82f6',
+            inputValidator: (value) => {
+                if (!value || parseInt(value) < tot) {
+                    return 'Uang pembayaran kurang!'
+                }
+            }
+        });
+        
+        if(!u) return; // Jika dibatalkan
         bayar = parseInt(u);
     }
-    const disc = parseInt(document.getElementById('inputDiscount').value)||0;
-    const trx = {id:'TRX-'+Date.now(), date:new Date().toISOString(), cashier:sessionStorage.getItem('username'), total:tot, method:payMethod, items:cart, discount:disc};
-    
-    await fetch('/api/checkout', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(trx)});
-    
-    document.getElementById('p-no').innerText=trx.id; document.getElementById('p-date').innerText=new Date().toLocaleDateString();
-    document.getElementById('p-items').innerHTML = cart.map(i=>`<tr><td>${i.name}</td><td align="right">${i.qty}x${i.price}</td></tr>`).join('');
-    document.getElementById('p-footer').innerHTML = `<div style="display:flex;justify-content:space-between"><span>TOT</span><span>${tot.toLocaleString()}</span></div><div style="display:flex;justify-content:space-between"><span>PAY</span><span>${bayar.toLocaleString()}</span></div><div style="display:flex;justify-content:space-between"><span>CHG</span><span>${(bayar-tot).toLocaleString()}</span></div>`;
-    
-    cart=[]; document.getElementById('inputDiscount').value=''; renderCart(); loadData();
-    window.print();
-}
 
+    const disc = parseInt(document.getElementById('inputDiscount').value) || 0;
+    const trxId = 'TRX-' + Date.now().toString().slice(-6);
+    const dateNow = new Date().toLocaleString('id-ID');
+
+    // 1. SIAPKAN DATA STRUK (PENTING: Lakukan ini SEBELUM request ke server)
+    const printArea = document.getElementById('print-area');
+    document.getElementById('p-no').innerText = trxId;
+    document.getElementById('p-date').innerText = dateNow;
+    
+    // Render Item Struk
+    document.getElementById('p-items').innerHTML = cart.map(i => `
+        <tr>
+            <td style="padding-bottom: 4px;">${i.name}</td>
+            <td align="right" style="padding-bottom: 4px;">${i.qty} x ${i.price.toLocaleString()}</td>
+        </tr>
+    `).join('');
+
+    // Render Footer Struk
+    document.getElementById('p-footer').innerHTML = `
+        <div style="display:flex;justify-content:space-between"><span>TOTAL</span><span>Rp ${(tot + disc).toLocaleString()}</span></div>
+        ${disc > 0 ? `<div style="display:flex;justify-content:space-between"><span>DISKON</span><span>-Rp ${disc.toLocaleString()}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between; border-top: 1px dashed black; margin-top: 4px; padding-top: 4px; font-weight: bold;">
+            <span>TAGIHAN</span><span>Rp ${tot.toLocaleString()}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between"><span>BAYAR</span><span>Rp ${bayar.toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between"><span>KEMBALI</span><span>Rp ${(bayar - tot).toLocaleString()}</span></div>
+    `;
+
+    // 2. SIMPAN KE DATABASE (Background Process)
+    const trx = {
+        id: trxId, 
+        date: new Date().toISOString(), 
+        cashier: sessionStorage.getItem('username') || 'Admin', 
+        total: tot, 
+        method: payMethod, 
+        items: cart, 
+        discount: disc
+    };
+
+    // Tampilkan Loading
+    Swal.fire({title: 'Memproses...', didOpen: () => Swal.showLoading()});
+
+    try {
+        await fetch('/api/checkout', {
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(trx)
+        });
+
+        // 3. CETAK STRUK
+        Swal.close();
+        
+        // Reset Keranjang DULUAN agar UI Kasir bersih
+        cart = []; 
+        document.getElementById('inputDiscount').value = ''; 
+        renderCart(); 
+        loadData();
+
+        // Tampilkan Print Area & Cetak
+        printArea.classList.remove('hidden');
+        
+        // Timeout penting! Memberi waktu browser me-render HTML struk sebelum dialog print muncul
+        setTimeout(() => {
+            window.print();
+            printArea.classList.add('hidden'); // Sembunyikan lagi setelah print dialog tertutup
+        }, 500);
+
+    } catch(e) { 
+        console.error(e);
+        Swal.fire('Error', 'Gagal menyimpan transaksi, tapi struk akan dicoba cetak.', 'warning')
+        .then(() => {
+             // Tetap coba print walau DB error (opsional)
+             setTimeout(() => window.print(), 500);
+        });
+    }
+}
 function calcDashboard() {
     const today=new Date().toDateString(); let inc=0, sld=0, cnt=0;
     const days=[], data=[0,0,0,0,0,0,0]; for(let i=6;i>=0;i--){const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toLocaleDateString('id',{weekday:'short'}));}
@@ -207,3 +284,4 @@ function renderStockTable() {
             </td>
         </tr>`).join(''); 
 }
+
