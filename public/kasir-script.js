@@ -1,4 +1,4 @@
-const USERS = { "admin": "123", "fatiha": "111", "kasir": "1" };
+const USERS = { "admin": "123", "fatiha": "111", "kasir": "1", "mala": "02"};
 let products = [], history = [], cart = [], payMethod = 'TUNAI';
 let salesChart = null;
 
@@ -427,3 +427,4 @@ async function delHistory(id) {
         Swal.fire({title:'Terhapus', icon:'success', toast:true, position:'top-end', timer:1000, showConfirmButton:false});
     }
 }
+
